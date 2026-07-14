@@ -1,0 +1,3834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>HandBrake</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#2b2b2b;--surface:#3c3c3c;--surface2:#444;--surface3:#4a4a4a;
+  --border:#555;--border2:#666;
+  --text:#e8e8e8;--text2:#bbb;--text3:#888;
+  --accent:#4a90d9;--accent2:#3a7bc8;
+  --green:#4caf50;--green2:#388e3c;
+  --red:#e53935;--yellow:#f9a825;
+  --nav:#232323;--tab-active:#3c3c3c;--tab-bg:#2b2b2b;
+  --input-bg:#222;--input-border:#555;
+  --row-hover:#404040;--row-selected:#1a4a7a;
+  --radius:4px;--nav-h:58px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;overflow:hidden;}
+
+/* ── Layout ── */
+.app{display:flex;flex-direction:column;height:100%;max-height:100%;overflow:hidden;position:fixed;top:0;left:0;right:0;bottom:0;}
+.app-header{flex-shrink:0;display:flex;flex-direction:column;}
+.app-body{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+
+/* Desktop layout */
+@media(min-width:900px){
+  .app{max-width:none;}
+  .desktop-body{display:flex;flex:1;overflow:hidden;min-height:0;}
+  .desktop-left{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;min-height:0;}
+  .sheet{align-items:center;}
+  .sheet-inner{border-radius:8px;max-height:85vh;max-width:760px;}
+  .presets-inner{width:300px;}
+  .panels{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+  /* Panel fills available height on desktop so preview fills it */
+  .panel.active{flex:1;overflow-y:auto;}
+  #panel-summary.active{display:flex !important;flex-direction:column;overflow:hidden;flex:1;}
+  /* Summary: info left ~35%, preview right ~65% */
+  #summary-body{flex-direction:row !important;}
+  .summary-info-col{width:35% !important;border-right:1px solid var(--border);overflow-y:auto;}
+  #preview-col{display:flex !important;width:65%;flex-direction:column;}
+  #preview-img{flex:1;min-height:300px;}
+  /* Wider form labels on desktop */
+  .field-label{min-width:120px;}
+  .field-label.wide{min-width:150px;}
+}
+
+/* Large desktop */
+@media(min-width:1200px){
+  .summary-info-col{width:30% !important;}
+  #preview-col{width:70%;}
+}
+
+/* ── Dropdown menus ── */
+.menu-bar{display:flex;align-items:stretch;background:var(--nav);border-bottom:1px solid var(--border);flex-shrink:0;}
+.menu-item{position:relative;}
+.menu-btn{padding:4px 10px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:13px;font-family:inherit;height:100%;display:flex;align-items:center;}
+.menu-btn:hover,.menu-btn.active{background:var(--accent);color:#fff;}
+.dropdown{position:fixed;background:var(--surface);border:1px solid var(--border2);border-radius:4px;min-width:200px;z-index:1000;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.4);}
+.dropdown.open{display:block;}
+.dd-item{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;font-size:13px;cursor:pointer;color:var(--text);white-space:nowrap;}
+.dd-item:hover{background:var(--row-selected);color:#fff;}
+.toolbar-btn:disabled{opacity:0.35;cursor:not-allowed;pointer-events:none;}
+.toolbar-split-main:disabled,.toolbar-split-arrow:disabled{opacity:0.35;cursor:not-allowed;pointer-events:none;}
+.toolbar-btn.disabled{opacity:0.35;cursor:not-allowed;}
+.dd-item.dd-disabled{color:var(--text3);cursor:default;pointer-events:none;}
+.dd-item.disabled{color:var(--text3);cursor:default;pointer-events:none;}
+.dd-sep{height:1px;background:var(--border);margin:3px 0;}
+.dd-shortcut{font-size:11px;color:var(--text3);margin-left:20px;}
+.dd-item:hover .dd-shortcut{color:rgba(255,255,255,0.7);}
+/* Toolbar split button */
+.toolbar-split{display:flex;align-items:stretch;position:relative;flex-shrink:0;}
+.toolbar-split-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:8px 8px 8px 10px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:10px;white-space:nowrap;}
+.toolbar-split-main i{font-size:22px;}
+.toolbar-split-main:hover{background:var(--surface2);}
+.toolbar-split-arrow{display:flex;align-items:center;padding:0 4px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:10px;border-left:1px solid var(--border);}
+.toolbar-split-arrow:hover{background:var(--surface2);}
+.toolbar-split.primary .toolbar-split-main i{color:var(--green);}
+/* Bottom status bar */
+.status-bar{background:var(--nav);border-top:1px solid var(--border);padding:3px 12px;font-size:12px;color:var(--text2);flex-shrink:0;display:flex;align-items:center;gap:8px;}
+.status-bar .status-progress{color:var(--accent);font-weight:500;}
+/* ── Top toolbar ── */
+.toolbar{background:var(--nav);border-bottom:1px solid var(--border);padding:0;display:flex;align-items:stretch;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.toolbar::-webkit-scrollbar{display:none;}
+/* Labels always hidden by default - shown only on wide screens via JS */
+.tb-label{display:inline;font-size:10px;}
+.toolbar-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 8px;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:0;font-size:10px;flex-shrink:0;white-space:nowrap;}
+.toolbar-btn i{font-size:22px;}
+.toolbar-btn:active{background:var(--surface2);}
+.toolbar-btn.primary i{color:var(--green);}
+.toolbar-btn.pause-btn i{color:var(--yellow);}
+.toolbar-sep{width:1px;background:var(--border);margin:4px 2px;flex-shrink:0;}
+.toolbar-split-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 8px 6px 10px;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:0;font-size:10px;flex-shrink:0;white-space:nowrap;}
+.toolbar-split-main i{font-size:22px;}
+.toolbar-split-main:hover,.toolbar-split-main:active{background:var(--surface2);}
+/* Smaller on mobile */
+@media(max-width:600px){
+  .tb-label{font-size:9px;}
+  .toolbar-btn{padding:4px 5px;}
+  .toolbar-btn i{font-size:19px;}
+  .toolbar-split-main{padding:4px 5px;}
+  .toolbar-split-main i{font-size:19px;}
+}
+/* Wide screens */
+@media(min-width:900px){
+  .toolbar-btn{padding:6px 10px;}
+  .toolbar-btn i{font-size:20px;}
+}
+
+/* ── Source bar ── */
+.source-bar{background:var(--nav);border-bottom:1px solid var(--border);padding:4px 10px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;}
+.source-bar b{color:var(--text);}
+/* On mobile the source bar is a single truncated line */
+@media(max-width:700px){
+  .source-bar{font-size:11px;padding:3px 8px 3px 10px;}
+}
+
+/* ── Title / preset bar ── */
+.meta-bar{background:var(--nav);border-bottom:1px solid var(--border);padding:4px 8px;display:flex;flex-direction:column;gap:3px;}
+.meta-row{display:flex;align-items:center;gap:6px;font-size:12px;overflow:hidden;}
+@media(max-width:700px){
+  .meta-bar{padding:3px 8px;gap:2px;}
+  .meta-row{font-size:11px;}
+}
+.meta-label{color:var(--text3);min-width:38px;}
+.meta-select{flex:1;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:3px 6px;font-size:12px;font-family:inherit;}
+.meta-range{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);}
+.meta-range input{width:36px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:2px 4px;font-size:12px;text-align:center;}
+.preset-path{flex:1;color:var(--text2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.preset-modified{color:var(--accent);font-size:11px;font-style:italic;}
+.btn-sm{padding:3px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:11px;font-family:inherit;white-space:nowrap;}
+.btn-sm:active{background:var(--surface3);}
+
+/* ── Tabs ── */
+.tabs{display:flex;background:var(--tab-bg);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:8px 12px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:12px;white-space:nowrap;font-family:inherit;border-bottom:2px solid transparent;}
+.tab.active{color:var(--text);background:var(--tab-active);border-bottom-color:var(--accent);}
+.tab:active{background:var(--surface);}
+
+/* ── Tab panels ── */
+.panels{flex:1;overflow:hidden;min-height:0;display:flex;flex-direction:column;}
+.panel{display:none;flex:1;overflow-y:auto;padding:12px;min-height:0;}
+.panel.active{display:block;}
+#panel-summary.active{display:flex;flex-direction:column;overflow:hidden;padding:0;}
+
+/* ── Form elements ── */
+.field-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.field-label{color:var(--text2);min-width:90px;font-size:13px;flex-shrink:0;}
+.field-label.wide{min-width:120px;}
+select,input[type=text],input[type=number],textarea{
+  background:var(--input-bg);border:1px solid var(--input-border);
+  color:var(--text);border-radius:var(--radius);padding:5px 8px;
+  font-size:13px;font-family:inherit;outline:none;
+}
+select:focus,input:focus,textarea:focus{border-color:var(--accent);}
+select{-webkit-appearance:none;appearance:none;cursor:pointer;}
+.field-select{flex:1;}
+input[type=range]{flex:1;height:4px;accent-color:var(--accent);cursor:pointer;}
+input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+textarea{resize:vertical;min-height:60px;width:100%;}
+
+.section-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.section-title:first-child{margin-top:0;}
+
+.radio-group{display:flex;flex-direction:column;gap:6px;}
+.radio-row{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;}
+.radio-row input[type=radio]{width:15px;height:15px;accent-color:var(--accent);}
+
+.slider-wrap{display:flex;align-items:center;gap:8px;flex:1;}
+.slider-val{color:var(--accent);font-weight:600;min-width:28px;text-align:right;font-size:13px;}
+
+.inline-row{display:flex;align-items:center;gap:6px;flex:1;}
+.num-input{width:64px;}
+.sep-label{color:var(--text3);font-size:13px;}
+
+/* ── Summary tab ── */
+.summary-grid{display:flex;flex-direction:column;gap:0;}
+.summary-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.summary-row:last-child{border-bottom:none;}
+.sum-key{color:var(--text3);min-width:90px;font-size:13px;flex-shrink:0;}
+.sum-val{color:var(--text);font-size:13px;line-height:1.5;}
+
+/* ── Audio / Subtitle track list ── */
+.track-toolbar{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.track-list{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.track-row{padding:0;}
+.track-header{display:flex;align-items:center;gap:0;background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;}
+.track-header:last-child{border-bottom:none;}
+.track-header:active{background:var(--surface2);}
+.track-expand{padding:8px 10px;color:var(--text3);font-size:16px;}
+.track-info{flex:1;padding:8px 4px;font-size:12px;}
+.track-info-main{color:var(--text);}
+.track-info-sub{color:var(--text3);margin-top:2px;}
+.track-arrow{color:var(--accent);padding:8px 10px;font-size:13px;}
+.track-detail{padding:10px;background:var(--surface2);border-bottom:1px solid var(--border);display:none;}
+.track-detail.open{display:block;}
+.track-detail .field-row{margin-bottom:8px;}
+.track-detail .field-row:last-child{margin-bottom:0;}
+.track-empty{padding:20px;text-align:center;color:var(--text3);font-size:13px;border:1px solid var(--border);border-radius:var(--radius);}
+.btn-track{padding:5px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:12px;font-family:inherit;display:flex;align-items:center;gap:4px;}
+.btn-track:active{background:var(--surface3);}
+.btn-track i{font-size:14px;}
+.btn-danger{border-color:#c62828;color:var(--red);}
+
+/* ── Chapters table ── */
+.chapters-table{width:100%;border-collapse:collapse;font-size:12px;}
+.chapters-table th{background:var(--surface);color:var(--text3);padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);font-weight:500;}
+.chapters-table td{padding:6px 8px;border-bottom:1px solid var(--border);}
+.chapters-table tr:last-child td{border-bottom:none;}
+.chapters-table input{background:transparent;border:none;color:var(--text);width:100%;padding:0;font-size:12px;font-family:inherit;}
+.chapters-table input:focus{outline:1px solid var(--accent);background:var(--input-bg);border-radius:2px;}
+
+/* ── Queue panel ── */
+.queue-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:50;align-items:center;justify-content:center;}
+.queue-panel.open{display:flex;}
+.queue-inner{background:var(--bg);width:100%;height:100%;display:flex;flex-direction:column;}
+@media(min-width:900px){.queue-inner{width:90%;max-width:1100px;height:90vh;border-radius:8px;border:1px solid var(--border);box-shadow:0 8px 40px rgba(0,0,0,0.5);}}
+.queue-toolbar{background:var(--nav);border-bottom:1px solid var(--border);padding:6px 10px;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.queue-toolbar-left{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.queue-toolbar-center{flex:1;text-align:center;min-width:0;overflow:hidden;}
+.queue-title{font-weight:600;font-size:14px;}
+.queue-subtitle{font-size:11px;color:var(--text3);}
+.queue-toolbar-right{display:flex;align-items:center;gap:4px;}
+.btn-queue-action{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px;font-family:inherit;white-space:nowrap;}
+.btn-queue-action:active{background:var(--surface3);}
+.btn-queue-action.primary{background:var(--green2);border-color:var(--green);color:#fff;}
+.btn-queue-action.primary:active{background:#2e7d32;}
+.btn-queue-action i{font-size:14px;}
+.queue-body{display:flex;flex:1;overflow:hidden;min-height:0;}
+.queue-list{width:42%;min-width:160px;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;}
+.queue-detail{flex:1;overflow-y:auto;min-width:0;}
+.queue-item{padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:8px;}
+.queue-item:active,.queue-item.selected{background:var(--row-selected);}
+.q-status-icon{font-size:18px;flex-shrink:0;}
+.q-item-info{flex:1;min-width:0;}
+.q-item-name{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.q-item-meta{font-size:11px;color:var(--text3);margin-top:2px;}
+.q-progress-bar{height:2px;background:var(--border);border-radius:1px;margin-top:4px;}
+.q-progress-fill{height:2px;border-radius:1px;background:var(--accent);}
+.q-detail-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.q-detail-tab{flex:1;padding:8px;text-align:center;font-size:12px;cursor:pointer;border:none;background:transparent;color:var(--text3);font-family:inherit;border-bottom:2px solid transparent;}
+.q-detail-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+.q-detail-body{padding:10px 12px;font-size:12px;}
+.q-detail-actions{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.q-detail-row{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
+.q-detail-row:last-child{border-bottom:none;}
+.q-detail-key{color:var(--text3);min-width:80px;flex-shrink:0;font-size:12px;}
+.q-detail-val{color:var(--text);line-height:1.5;font-size:12px;word-break:break-word;}
+.when-done-row{display:flex;align-items:center;gap:8px;padding:7px 12px;border-top:1px solid var(--border);background:var(--nav);flex-shrink:0;}
+/* On mobile, stack list above detail */
+@media(max-width:600px){
+  .queue-body{flex-direction:column;}
+  .queue-list{width:100%;flex:0 0 auto;max-height:38%;border-right:none;border-bottom:1px solid var(--border);}
+  .queue-detail{flex:1;}
+}
+
+/* ── File browser sheet ── */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:60;display:none;align-items:flex-end;justify-content:center;}
+.sheet.open{display:flex;}
+.sheet-inner{background:var(--bg);width:100%;max-width:600px;height:100%;display:flex;flex-direction:column;border-radius:0;}
+.sheet-handle{display:none;}
+/* On desktop keep it as a centered modal */
+@media(min-width:700px){
+  .sheet{align-items:center;}
+  .sheet-inner{height:85vh;max-height:85vh;border-radius:8px;}
+  .sheet-handle{display:block;width:36px;height:4px;background:var(--border2);border-radius:2px;margin:10px auto 0;flex-shrink:0;}
+}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);}
+.sheet-title{font-size:16px;font-weight:600;}
+.sheet-body{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+/* Locations now a horizontal tab bar at top */
+.sidebar{display:flex;flex-direction:row;flex-shrink:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;background:var(--surface);border-bottom:1px solid var(--border);padding:0;gap:0;}
+.sidebar::-webkit-scrollbar{display:none;}
+.sidebar-item{display:flex;align-items:center;gap:6px;padding:10px 14px;cursor:pointer;font-size:13px;white-space:nowrap;flex-shrink:0;border-bottom:2px solid transparent;color:var(--text2);}
+.sidebar-item:active{background:var(--surface2);}
+.sidebar-item.active{border-bottom-color:var(--accent);color:var(--text);background:var(--surface2);}
+.sidebar-item i{font-size:16px;color:var(--text3);}
+.sidebar-item.active i{color:var(--accent);}
+.sidebar-section{display:none;}
+.sidebar-add{display:flex;align-items:center;gap:6px;padding:10px 14px;cursor:pointer;font-size:13px;color:var(--accent);white-space:nowrap;flex-shrink:0;border-bottom:2px solid transparent;}
+.file-pane{flex:1;overflow-y:auto;overflow-x:hidden;}
+.file-header{display:flex;align-items:center;gap:0;padding:6px 12px;background:var(--surface);border-bottom:1px solid var(--border);font-size:11px;color:var(--text3);}
+.file-header-name{flex:1;}
+.file-header-size{width:70px;text-align:right;}
+.file-row{display:flex;align-items:center;gap:10px;padding:13px 12px;border-bottom:1px solid var(--border);cursor:pointer;}
+.file-row:active,.file-row.selected{background:var(--row-selected);}
+.file-row-icon{font-size:22px;color:var(--text3);flex-shrink:0;}
+.file-row-icon.video{color:var(--accent);}
+.file-row-name{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-row-size{font-size:12px;color:var(--text3);width:70px;text-align:right;flex-shrink:0;padding-left:8px;}
+.sheet-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;}
+.single-title-row{display:flex;align-items:center;gap:6px;font-size:13px;}
+.sheet-actions{display:flex;gap:8px;}
+.btn-primary{padding:8px 18px;border-radius:var(--radius);border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;}
+.btn-primary:active{background:var(--accent2);}
+.btn-cancel{padding:8px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-family:inherit;}
+
+/* ── Presets panel ── */
+.presets-panel{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:60;display:none;align-items:flex-start;justify-content:flex-end;}
+.presets-panel.open{display:flex;}
+.presets-inner{background:var(--bg);width:85%;max-width:320px;height:100%;display:flex;flex-direction:column;}
+.presets-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.preset-category{padding:8px 14px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;background:var(--surface);}
+.preset-item{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;}
+.preset-item:active{background:var(--row-selected);}
+.preset-name{flex:1;font-size:13px;}
+.preset-actions{display:flex;gap:4px;}
+.btn-icon{width:28px;height:28px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.btn-icon:active{background:var(--surface2);}
+.preset-add-btn{display:flex;align-items:center;gap:6px;padding:10px 14px;cursor:pointer;font-size:13px;color:var(--accent);border-top:1px solid var(--border);}
+
+/* ── Responsive helpers ── */
+.desktop-only{display:flex;}
+.mobile-only{display:none;}
+@media(max-width:600px){
+  .desktop-only{display:none !important;}
+  .mobile-only{display:flex !important;}
+  /* Constrain meta-bar rows to single line on mobile */
+  .meta-bar{padding:3px 8px;}
+  .meta-row{flex-wrap:nowrap;overflow:hidden;}
+  .meta-label{min-width:44px !important;font-size:11px;}
+  .meta-select{font-size:11px;}
+}
+/* ── Bottom nav (for phone) ── */
+.bottom-nav{display:none;}
+@media(max-width:480px){
+  .bottom-nav{display:flex;background:var(--nav);border-top:1px solid var(--border);height:var(--nav-h);}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-family:inherit;padding-bottom:env(safe-area-inset-bottom,0);}
+  .nav-btn i{font-size:22px;}
+  .nav-btn.active{color:var(--accent);}
+  .panels{padding-bottom:0;}
+}
+
+/* ── Misc ── */
+.spin{animation:spin 1s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.green{color:var(--green);}
+.red{color:var(--red);}
+.yellow{color:var(--yellow);}
+.accent{color:var(--accent);}
+.muted{color:var(--text3);}
+.icon-btn{width:32px;height:32px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.icon-btn:active{background:var(--surface2);}
+.save-bar{background:var(--nav);border-top:1px solid var(--border);padding:4px 8px;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;flex-shrink:0;}
+.save-label{color:var(--text3);font-size:12px;white-space:nowrap;}
+.save-input{flex:1;font-size:12px;min-width:120px;}
+.to-label{color:var(--text3);font-size:12px;white-space:nowrap;}
+.to-path{color:var(--accent);font-size:12px;cursor:pointer;text-decoration:underline;}
+.when-done-sel{background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:3px 6px;font-size:12px;font-family:inherit;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:80;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:8px;padding:20px;width:90%;max-width:320px;}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:14px;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+
+/* ── Preview panel ── */
+.preview-panel{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;background:var(--nav);border-radius:4px;margin-bottom:12px;}
+.preview-img{width:100%;max-width:420px;border-radius:4px;background:#111;min-height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.preview-img img{width:100%;border-radius:4px;display:block;}
+.preview-nav{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2);}
+.preview-nav button{width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+/* ── Activity Log panel ── */
+.activity-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:55;align-items:center;justify-content:center;}
+.activity-panel.open{display:flex;}
+.activity-inner{background:var(--bg);width:100%;height:100%;display:flex;flex-direction:column;}
+@media(min-width:900px){.activity-inner{width:90%;max-width:900px;height:90vh;border-radius:8px;border:1px solid var(--border);box-shadow:0 8px 40px rgba(0,0,0,0.5);}}
+.activity-header{background:var(--nav);border-bottom:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.activity-title{flex:1;font-weight:600;font-size:14px;}
+.activity-file{font-size:11px;color:var(--accent);padding:4px 12px;background:var(--nav);border-bottom:1px solid var(--border);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.activity-log{flex:1;overflow-y:auto;font-family:monospace;font-size:11px;color:var(--text2);padding:10px 12px;line-height:1.5;white-space:pre-wrap;word-break:break-all;}
+/* ── Preferences panel ── */
+.prefs-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:55;align-items:center;justify-content:center;}
+.prefs-panel.open{display:flex;}
+.prefs-inner{background:var(--bg);width:100%;height:100%;display:flex;flex-direction:column;}
+@media(min-width:900px){.prefs-inner{width:90%;max-width:560px;height:90vh;border-radius:8px;border:1px solid var(--border);box-shadow:0 8px 40px rgba(0,0,0,0.5);}}
+.prefs-header{background:var(--nav);border-bottom:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.prefs-tabs{display:flex;gap:4px;flex:1;}
+.prefs-tab{padding:5px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-family:inherit;}
+.prefs-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.prefs-body{flex:1;overflow-y:auto;padding:14px;}
+.prefs-section{font-weight:600;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px;}
+.prefs-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;}
+.prefs-row label{flex:1;cursor:pointer;}
+.prefs-row input[type=number]{width:60px;padding:3px 6px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;}
+.prefs-row select{padding:3px 6px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;}
+.prefs-row input[type=text]{flex:1;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;}
+.prefs-ext-list{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:6px;min-height:80px;max-height:140px;overflow-y:auto;font-size:13px;margin:4px 0;}
+.prefs-ext-item{padding:2px 4px;cursor:pointer;border-radius:3px;}
+.prefs-ext-item.selected{background:var(--accent);color:#fff;}
+.prefs-footer{border-top:1px solid var(--border);padding:10px 14px;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
+/* ── Context menu ── */
+.ctx-menu{position:fixed;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:4px 0;z-index:200;min-width:140px;box-shadow:0 4px 16px rgba(0,0,0,0.4);}
+.ctx-item{padding:8px 14px;font-size:13px;cursor:pointer;color:var(--text);}
+.ctx-item:hover,.ctx-item:active{background:var(--row-selected);}
+.ctx-item.danger{color:var(--red);}
+/* ── Selection behavior dialog ── */
+.sel-dialog{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;display:none;align-items:center;justify-content:center;}
+.sel-dialog.open{display:flex;}
+.sel-inner{background:var(--surface);border-radius:8px;width:92%;max-width:520px;max-height:90vh;overflow-y:auto;padding:0;}
+.sel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.sel-body{padding:14px;}
+.lang-cols{display:flex;gap:8px;margin:10px 0;}
+.lang-list{flex:1;border:1px solid var(--border2);border-radius:4px;background:var(--input-bg);height:140px;overflow-y:auto;}
+.lang-item{padding:5px 8px;font-size:12px;cursor:pointer;color:var(--text2);}
+.lang-item:hover,.lang-item.selected{background:var(--row-selected);color:var(--text);}
+.lang-btns{display:flex;flex-direction:column;gap:6px;justify-content:center;}
+.passthru-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin:8px 0;}
+.passthru-item{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;}
+
+</style>
+</head>
+<body>
+<div class="app" id="app-root">
+
+<div class="app-header">
+<!-- ── Menu Bar ── -->
+<div class="menu-bar" id="menu-bar">
+  <div class="menu-item">
+    <button class="menu-btn" onclick="toggleMenu('menu-file')">File</button>
+    <div class="dropdown" id="menu-file">
+      <div class="dd-item" onclick="openFileBrowser('source');closeMenus()">Open Source...<span class="dd-shortcut">Ctrl+O</span></div>
+      <div class="dd-item" onclick="openFileBrowser('directory');closeMenus()">Open Directory...<span class="dd-shortcut">Shift+Ctrl+O</span></div>
+      <div class="dd-item" onclick="openFileBrowser('output');closeMenus()">Set Destination...<span class="dd-shortcut">Ctrl+S</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="openPrefsPanel();closeMenus()">Preferences</div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="closeMenus()">Quit</div>
+    </div>
+  </div>
+  <div class="menu-item">
+    <button class="menu-btn" onclick="toggleMenu('menu-queue')">Queue</button>
+    <div class="dropdown" id="menu-queue">
+      <div class="dd-item" onclick="addToQueue();closeMenus()">Add<span class="dd-shortcut">Alt+A</span></div>
+      <div class="dd-item" onclick="addToQueue();closeMenus()">Add Multiple...<span class="dd-shortcut">Alt+M</span></div>
+      <div class="dd-item" onclick="addToQueue();closeMenus()">Add All<span class="dd-shortcut">Shift+Alt+A</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="startQueue();closeMenus()">Start Encoding<span class="dd-shortcut">Ctrl+E</span></div>
+      <div class="dd-item" onclick="pauseQueue();closeMenus()">Pause Encoding<span class="dd-shortcut">Ctrl+P</span></div>
+      <div class="dd-sep"></div>
+      <div class="dd-item dd-disabled">Import Queue...</div>
+      <div class="dd-item dd-disabled">Export Queue...</div>
+    </div>
+  </div>
+  <div class="menu-item">
+    <button class="menu-btn" onclick="toggleMenu('menu-view')">View</button>
+    <div class="dropdown" id="menu-view">
+      <div class="dd-item" onclick="openPresets();closeMenus()">Presets List<span class="dd-shortcut">Alt+E</span></div>
+      <div class="dd-item" onclick="openQueue();closeMenus()">Queue<span class="dd-shortcut">Alt+U</span></div>
+      <div class="dd-item" onclick="closeMenus()">Preview<span class="dd-shortcut">Alt+R</span></div>
+      <div class="dd-item" onclick="openActivity();closeMenus()">Activity Window<span class="dd-shortcut">Alt+W</span></div>
+    </div>
+  </div>
+  <div class="menu-item">
+    <button class="menu-btn" onclick="toggleMenu('menu-presets')">Presets</button>
+    <div class="dropdown" id="menu-presets">
+      <div class="dd-item dd-disabled">Set Default</div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="saveNewPreset();closeMenus()">New Preset...<span class="dd-shortcut">Ctrl+N</span></div>
+      <div class="dd-item" onclick="saveNewPreset();closeMenus()">Save</div>
+      <div class="dd-item dd-disabled">Rename...</div>
+      <div class="dd-item dd-disabled">Delete...</div>
+      <div class="dd-sep"></div>
+      <div class="dd-item" onclick="document.getElementById('preset-import-input').click();closeMenus()">Import Preset...</div>
+      <div class="dd-item dd-disabled">Export Preset...</div>
+      <div class="dd-sep"></div>
+      <div class="dd-item dd-disabled">Reset Built-in Presets</div>
+    </div>
+  </div>
+  <div class="menu-item">
+    <button class="menu-btn" onclick="toggleMenu('menu-help')">Help</button>
+    <div class="dropdown" id="menu-help">
+      <div class="dd-item" onclick="window.open('https://handbrake.fr/docs/','_blank');closeMenus()">HandBrake Documentation</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Top Toolbar ── -->
+<div class="toolbar" id="main-toolbar">
+  <div class="toolbar-split">
+    <button class="toolbar-split-main" onclick="openFileBrowser('source')" title="Open Source">
+      <i class="ti ti-movie"></i><span class="tb-label">Open Source</span>
+    </button>
+    <button class="toolbar-split-arrow" onclick="toggleMenu('tb-open-menu')" title="Open options">
+      <i class="ti ti-chevron-down" style="font-size:11px"></i>
+    </button>
+    <div class="dropdown" id="tb-open-menu">
+      <div class="dd-item" onclick="openFileBrowser('source');closeMenus()">Open Source</div>
+      <div class="dd-item" onclick="openFileBrowser('directory');closeMenus()">Open Directory</div>
+    </div>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-split">
+    <button class="toolbar-split-main" id="add-queue-btn" onclick="addToQueue()" title="Add to Queue" disabled>
+      <i class="ti ti-plus"></i><span class="tb-label">Add Queue</span>
+    </button>
+    <button class="toolbar-split-arrow" id="add-queue-arrow" onclick="toggleMenu('tb-add-menu')" title="Add options" disabled>
+      <i class="ti ti-chevron-down" style="font-size:11px"></i>
+    </button>
+    <div class="dropdown" id="tb-add-menu">
+      <div class="dd-item disabled" id="add-menu-add" onclick="addToQueue();closeMenus()">Add</div>
+      <div class="dd-item disabled" id="add-menu-multiple" onclick="addToQueue();closeMenus()">Add Multiple...</div>
+      <div class="dd-item disabled" id="add-menu-all" onclick="addToQueue();closeMenus()">Add All</div>
+    </div>
+  </div>
+  <button class="toolbar-btn primary" id="start-stop-btn" onclick="toggleStartStop()" title="Start" disabled>
+    <i class="ti ti-player-play" id="start-stop-icon"></i><span class="tb-label" id="start-stop-label">Start</span>
+  </button>
+  <button class="toolbar-btn pause-btn" id="pause-resume-btn" onclick="togglePauseResume()" title="Pause" disabled>
+    <i class="ti ti-player-pause" id="pause-resume-icon"></i><span class="tb-label" id="pause-resume-label">Pause</span>
+  </button>
+    <div class="toolbar-sep"></div>
+  <button class="toolbar-btn" onclick="openQueue()" title="Queue" style="position:relative">
+    <i class="ti ti-list-check"></i><span class="tb-label">Queue</span>
+    <span id="queue-badge" style="display:none;position:absolute;top:4px;right:4px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;line-height:14px"></span>
+  </button>
+  <button class="toolbar-btn" onclick="openPresets()" title="Presets">
+    <i class="ti ti-layout-list"></i><span class="tb-label">Presets</span>
+  </button>
+  <button class="toolbar-btn" onclick="openActivity()" title="Activity">
+    <i class="ti ti-activity"></i><span class="tb-label">Activity</span>
+  </button>
+</div>
+</div><!-- /app-header -->
+<div class="app-body">
+
+<!-- ── Source bar ── -->
+<div class="source-bar" id="source-bar">No source selected — tap Open Source to begin</div>
+
+<!-- ── Title / Preset bar ── -->
+<div class="meta-bar">
+  <div class="meta-row">
+    <span class="meta-label">Title:</span>
+    <select class="meta-select" id="title-select" style="flex:1;min-width:0;"><option>No source</option></select>
+    <span class="meta-range desktop-only">
+      Range: <select class="when-done-sel" id="range-type" style="font-size:11px">
+        <option>Chapters</option><option>Seconds</option><option>Frames</option>
+      </select>
+      <input type="text" id="range-start" value="1" style="width:32px;font-size:11px;text-align:center;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:2px 4px;">
+      –
+      <input type="text" id="range-end" value="1" style="width:32px;font-size:11px;text-align:center;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:2px 4px;">
+    </span>
+  </div>
+  <div class="meta-row">
+    <span class="meta-label">Preset:</span>
+    <button id="preset-path" onclick="openPresets()" style="background:var(--surface2);border:1px solid var(--border2);cursor:pointer;text-align:left;color:var(--text2);font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 10px;border-radius:var(--radius);font-family:inherit;display:flex;align-items:center;gap:6px;" title="Click to change preset"><i class="ti ti-layout-list" style="font-size:14px;flex-shrink:0"></i><span id="preset-path-label" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">No preset selected</span></button>
+    <span class="preset-modified" id="preset-modified" style="display:none">Modified</span>
+    <button class="btn-sm desktop-only" onclick="reloadPreset()">Reload</button>
+    <button class="btn-sm desktop-only" onclick="saveNewPreset()">Save New Preset</button>
+    <button class="btn-sm mobile-only" onclick="saveNewPreset()" style="white-space:nowrap">+ Save</button>
+  </div>
+</div>
+
+<!-- ── Desktop body wrapper ── -->
+<div class="desktop-body" style="flex:1;min-height:0;overflow:hidden;display:flex;">
+<div class="desktop-left" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
+
+<!-- ── Tabs ── -->
+<div class="tabs" id="main-tabs">
+  <button class="tab active" onclick="showTab('summary',this)">Summary</button>
+  <button class="tab" onclick="showTab('dimensions',this)">Dimensions</button>
+  <button class="tab" onclick="showTab('filters',this)">Filters</button>
+  <button class="tab" onclick="showTab('video',this)">Video</button>
+  <button class="tab" onclick="showTab('audio',this)">Audio</button>
+  <button class="tab" onclick="showTab('subtitles',this)">Subtitles</button>
+  <button class="tab" onclick="showTab('chapters',this)">Chapters</button>
+  <button class="tab" onclick="showTab('tags',this)">Tags</button>
+</div>
+
+<!-- ── Tab Panels ── -->
+<div class="panels" id="panels">
+
+<!-- SUMMARY -->
+<div class="panel active" id="panel-summary" style="padding:0;flex-direction:column;height:100%;">
+  <!-- Format row -->
+  <div style="padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:13px;color:var(--text3);min-width:54px">Format:</span>
+      <select id="container" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:3px 8px;font-size:13px;font-family:inherit">
+        <option value="mkv">Matroska (avformat)</option>
+        <option value="mp4">MP4 (avformat)</option>
+      </select>
+    </div>
+    <button id="passthru-metadata-btn" onclick="togglePassthruMetadata()" 
+      style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:3px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--accent);color:#fff;font-family:inherit;">
+      <i class="ti ti-check" style="font-size:14px"></i> Passthru Common Metadata
+    </button>
+    <input type="checkbox" id="passthru-metadata" checked style="display:none">
+  </div>
+  <!-- Body: info left, preview right — stacked on mobile, side by side on desktop -->
+  <div id="summary-body" style="display:flex;flex:1;min-height:0;overflow:hidden;">
+    <!-- Left col: Duration, Tracks, Filters, Size -->
+    <div id="summary-info-col" style="flex:0 0 auto;width:100%;overflow-y:auto;padding:10px 12px;" class="summary-info-col">
+      <div id="summary-content">
+        <div style="padding:30px;text-align:center;color:var(--text3)">Open a source file to begin</div>
+      </div>
+    </div>
+    <!-- Right col: video preview — on mobile shown BELOW info as fixed height, on desktop beside -->
+    <div id="preview-col" style="display:none;flex-direction:column;flex-shrink:0;background:#111;position:relative;">
+      <div id="preview-img" style="display:flex;align-items:center;justify-content:center;overflow:hidden;width:100%;">
+        <span style="color:var(--text3);font-size:12px;padding:20px">No preview</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;padding:6px;background:rgba(0,0,0,0.6);flex-shrink:0;">
+        <button onclick="previewStep(-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid #666;background:rgba(0,0,0,0.5);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;"><i class="ti ti-chevron-left"></i></button>
+        <span id="preview-pos-label" style="font-size:13px;color:#ccc;">1/10</span>
+        <button onclick="previewStep(1)" style="width:30px;height:30px;border-radius:50%;border:1px solid #666;background:rgba(0,0,0,0.5);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;"><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DIMENSIONS -->
+<div class="panel" id="panel-dimensions">
+  <div id="source-dims-info" style="font-size:12px;color:var(--text3);margin-bottom:12px;display:none">
+    Storage Size: <span id="dim-storage"></span> &nbsp;·&nbsp; Display Size: <span id="dim-display"></span> &nbsp;·&nbsp; Aspect Ratio: <span id="dim-aspect"></span>
+  </div>
+
+  <div class="section-title">Orientation &amp; Cropping</div>
+  <div class="field-row">
+    <span class="field-label">Flipping:</span>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="flip-h"> Horizontal
+    </label>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Rotation:</span>
+    <select id="rotation" class="field-select">
+      <option value="">Off</option>
+      <option value="90">90°</option>
+      <option value="180">180°</option>
+      <option value="270">270°</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Cropping:</span>
+    <select id="cropping" class="field-select" onchange="toggleCropInputs()">
+      <option value="none">None</option>
+      <option value="auto">Automatic</option>
+      <option value="custom">Custom</option>
+    </select>
+  </div>
+  <div id="crop-inputs" style="display:none">
+    <div class="field-row" style="padding-left:98px">
+      <input type="number" id="crop-top" value="0" min="0" class="num-input" placeholder="Top">
+    </div>
+    <div class="field-row" style="padding-left:98px;gap:8px">
+      <input type="number" id="crop-left" value="0" min="0" class="num-input" placeholder="Left">
+      <input type="number" id="crop-right" value="0" min="0" class="num-input" placeholder="Right">
+    </div>
+    <div class="field-row" style="padding-left:98px">
+      <input type="number" id="crop-bottom" value="0" min="0" class="num-input" placeholder="Bottom">
+    </div>
+  </div>
+
+  <div class="section-title">Resolution &amp; Scaling</div>
+  <div class="field-row">
+    <span class="field-label">Resolution Limit:</span>
+    <select id="resolution-limit" class="field-select">
+      <option value="">No Limit</option>
+      <option value="720p">720p HD</option>
+      <option value="1080p">1080p Full HD</option>
+      <option value="2160p">2160p 4K UHD</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Anamorphic:</span>
+    <select id="anamorphic" class="field-select">
+      <option value="automatic">Automatic</option>
+      <option value="none">None</option>
+      <option value="loose">Loose</option>
+      <option value="custom">Custom</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Scaled Size:</span>
+    <div class="inline-row">
+      <input type="number" id="custom-width" class="num-input" placeholder="W">
+      <span class="sep-label">×</span>
+      <input type="number" id="custom-height" class="num-input" placeholder="H">
+    </div>
+  </div>
+  <div class="field-row">
+    <span class="field-label"></span>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="optimal-size" checked> Optimal Size
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin-left:12px">
+      <input type="checkbox" id="allow-upscaling"> Allow Upscaling
+    </label>
+  </div>
+
+  <div class="section-title">Borders</div>
+  <div class="field-row">
+    <span class="field-label">Fill:</span>
+    <select id="border-fill" class="field-select">
+      <option value="none">None</option>
+      <option value="black">Black</option>
+      <option value="white">White</option>
+      <option value="blur">Blur</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Color:</span>
+    <select id="border-color" class="field-select">
+      <option value="black">Black</option>
+      <option value="white">White</option>
+    </select>
+  </div>
+
+  <div id="final-dims" style="font-size:12px;color:var(--text3);margin-top:14px;padding-top:10px;border-top:1px solid var(--border);display:none">
+    <b style="color:var(--text2)">Final Dimensions</b><br>
+    Storage Size: <span id="final-storage"></span> &nbsp;·&nbsp; Display Size: <span id="final-display"></span> &nbsp;·&nbsp; Aspect Ratio: <span id="final-aspect"></span>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="panel" id="panel-filters">
+  <div class="field-row">
+    <span class="field-label">Detelecine:</span>
+    <select id="detelecine" class="field-select">
+      <option value="off">Off</option>
+      <option value="default">Default</option>
+      <option value="custom">Custom</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label wide">Interlace Detection:</span>
+    <select id="interlace-detection" class="field-select">
+      <option value="default">Default</option>
+      <option value="fast">Fast</option>
+      <option value="off">Off</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Deinterlace:</span>
+    <select id="deinterlace" class="field-select" onchange="toggleDeinterlacePreset()">
+      <option value="off">Off</option>
+      <option value="decomb">Decomb</option>
+      <option value="yadif">Yadif</option>
+    </select>
+    <span class="sep-label" style="margin-left:4px">Preset:</span>
+    <select id="deinterlace-preset" class="field-select" style="max-width:120px">
+      <option value="default">Default</option>
+      <option value="skip-spatial">Skip Spatial</option>
+      <option value="bob">Bob</option>
+      <option value="eedi2">EEDI2</option>
+      <option value="eedi2bob">EEDI2 Bob</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Deblock Filter:</span>
+    <select id="deblock" class="field-select">
+      <option value="off">Off</option>
+      <option value="default">Default</option>
+      <option value="weak">Weak</option>
+      <option value="medium">Medium</option>
+      <option value="strong">Strong</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Denoise Filter:</span>
+    <select id="denoise" class="field-select" onchange="toggleDenoisePreset()">
+      <option value="off">Off</option>
+      <option value="nlmeans">NLMeans</option>
+      <option value="hqdn3d">HQDN3D</option>
+    </select>
+  </div>
+  <div class="field-row" id="denoise-preset-row" style="display:none">
+    <span class="field-label">Denoise Preset:</span>
+    <select id="denoise-preset" class="field-select">
+      <option value="ultralight">Ultralight</option>
+      <option value="light">Light</option>
+      <option value="medium" selected>Medium</option>
+      <option value="strong">Strong</option>
+      <option value="custom">Custom</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label wide">Chroma Smooth Filter:</span>
+    <select id="chroma-smooth" class="field-select">
+      <option value="off">Off</option>
+      <option value="default">Default</option>
+      <option value="ultralight">Ultralight</option>
+      <option value="light">Light</option>
+      <option value="medium">Medium</option>
+      <option value="strong">Strong</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Sharpen Filter:</span>
+    <select id="sharpen" class="field-select" onchange="toggleSharpenPreset()">
+      <option value="off">Off</option>
+      <option value="lapsharp">Lapsharp</option>
+      <option value="unsharp">Unsharp</option>
+    </select>
+  </div>
+  <div class="field-row" id="sharpen-preset-row" style="display:none">
+    <span class="field-label">Sharpen Preset:</span>
+    <select id="sharpen-preset" class="field-select">
+      <option value="light">Light</option>
+      <option value="medium" selected>Medium</option>
+      <option value="strong">Strong</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Colorspace:</span>
+    <select id="colorspace" class="field-select">
+      <option value="off">Off</option>
+      <option value="bt709">BT.709</option>
+      <option value="bt2020">BT.2020</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label"></span>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="grayscale"> Grayscale
+    </label>
+  </div>
+</div>
+
+<!-- VIDEO -->
+<div class="panel" id="panel-video">
+  <div class="field-row">
+    <span class="field-label">Video Encoder:</span>
+    <select id="video-encoder" class="field-select" onchange="updateEncoderOptions()">
+      <option value="h265_10bit">H.265 10-bit (x265)</option>
+      <option value="h265">H.265 (x265)</option>
+      <option value="h264">H.264 (x264)</option>
+      <option value="h264_10bit">H.264 10-bit (x264)</option>
+      <option value="av1">AV1 (SVT)</option>
+      <option value="av1_10bit">AV1 10-bit (SVT)</option>
+      <option value="vp9">VP9</option>
+      <option value="h265_nvenc">H.265 NVENC</option>
+      <option value="h264_nvenc">H.264 NVENC</option>
+      <option value="h265_qsv">H.265 QSV</option>
+      <option value="h264_qsv">H.264 QSV</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Framerate:</span>
+    <select id="framerate" class="field-select">
+      <option value="same">Same as source</option>
+      <option value="5">5 fps</option>
+      <option value="10">10 fps</option>
+      <option value="12">12 fps</option>
+      <option value="15">15 fps</option>
+      <option value="20">20 fps</option>
+      <option value="23.976">23.976 fps</option>
+      <option value="24">24 fps</option>
+      <option value="25">25 fps</option>
+      <option value="29.97">29.97 fps</option>
+      <option value="30">30 fps</option>
+      <option value="50">50 fps</option>
+      <option value="59.94">59.94 fps</option>
+      <option value="60">60 fps</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label"></span>
+    <div class="radio-group">
+      <label class="radio-row"><input type="radio" name="fr-mode" value="cfr" checked> Constant Framerate</label>
+      <label class="radio-row"><input type="radio" name="fr-mode" value="vfr"> Variable Framerate</label>
+    </div>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Color Range:</span>
+    <select id="color-range" class="field-select">
+      <option value="limited">Limited</option>
+      <option value="full">Full</option>
+    </select>
+  </div>
+
+  <div class="section-title">Quality</div>
+  <div class="field-row">
+    <span class="field-label"></span>
+    <div class="radio-group">
+      <label class="radio-row"><input type="radio" name="q-mode" value="cq" checked onchange="toggleQualityMode()"> Constant Quality:</label>
+      <div class="field-row" style="padding-left:22px;margin-bottom:0">
+        <span style="font-size:13px;color:var(--text3);min-width:24px">RF</span>
+        <div class="slider-wrap">
+          <input type="range" id="rf-slider" min="0" max="51" value="18" step="1"
+            oninput="document.getElementById('rf-val').textContent=this.value">
+          <span class="slider-val" id="rf-val">18</span>
+        </div>
+      </div>
+      <label class="radio-row"><input type="radio" name="q-mode" value="bitrate" onchange="toggleQualityMode()"> Bitrate (kbps):</label>
+      <div class="inline-row" style="padding-left:22px">
+        <input type="number" id="bitrate-val" value="0" class="num-input" disabled>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="multi-pass" disabled> Multi-Pass Encoding
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="turbo-pass" disabled> Turbo Analysis Pass
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Encoder Options</div>
+  <div class="field-row">
+    <span class="field-label">Preset:</span>
+    <div class="slider-wrap">
+      <input type="range" id="enc-preset-slider" min="0" max="8" value="5" step="1"
+        oninput="updatePresetLabel()">
+      <span class="slider-val" id="enc-preset-label" style="min-width:64px;font-size:12px">slow</span>
+    </div>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Tune:</span>
+    <select id="tune" class="field-select">
+      <option value="none">none</option>
+      <option value="film">film</option>
+      <option value="animation">animation</option>
+      <option value="grain">grain</option>
+      <option value="stillimage">stillimage</option>
+      <option value="fastdecode">fastdecode</option>
+      <option value="zerolatency">zerolatency</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Profile:</span>
+    <select id="profile" class="field-select">
+      <option value="auto">auto</option>
+      <option value="main">main</option>
+      <option value="main10">main10</option>
+      <option value="mainstillpicture">mainstillpicture</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <span class="field-label">Level:</span>
+    <select id="level" class="field-select">
+      <option value="auto">auto</option>
+      <option value="1">1</option><option value="2">2</option>
+      <option value="2.1">2.1</option><option value="3">3</option>
+      <option value="3.1">3.1</option><option value="4">4</option>
+      <option value="4.1">4.1</option><option value="5">5</option>
+      <option value="5.1">5.1</option><option value="5.2">5.2</option>
+      <option value="6">6</option><option value="6.1">6.1</option>
+      <option value="6.2">6.2</option>
+    </select>
+  </div>
+  <div class="field-row" style="align-items:flex-start">
+    <span class="field-label" style="padding-top:6px">Additional Options:</span>
+    <textarea id="additional-options" rows="3" style="flex:1" placeholder="e.g. keyint=250:bframes=4"></textarea>
+  </div>
+</div>
+
+<!-- AUDIO -->
+<div class="panel" id="panel-audio">
+  <div class="track-toolbar">
+    <button class="btn-track" onclick="addAudioTrackMenu()">Tracks <i class="ti ti-chevron-down" style="font-size:12px"></i></button>
+    <button class="btn-track" onclick="initLangLists();openModal('audio-sel-dialog')"><i class="ti ti-settings"></i> Selection Behavior...</button>
+    <button class="btn-track" onclick="reloadAudioTracks()"><i class="ti ti-refresh"></i> Reload</button>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button class="btn-track btn-danger" onclick="removeSelectedAudioTrack()"><i class="ti ti-circle-minus"></i> Remove</button>
+      <button class="btn-track btn-danger" onclick="clearAudioTracks()"><i class="ti ti-x"></i> Clear</button>
+    </div>
+  </div>
+  <div id="audio-track-list">
+    <div class="track-empty">No audio tracks — open a source file first</div>
+  </div>
+</div>
+
+<!-- SUBTITLES -->
+<div class="panel" id="panel-subtitles">
+  <div class="track-toolbar">
+    <button class="btn-track" onclick="addSubTrackMenu()">Tracks <i class="ti ti-chevron-down" style="font-size:12px"></i></button>
+    <button class="btn-track" onclick="initLangLists();openModal('sub-sel-dialog')"><i class="ti ti-settings"></i> Selection Behavior...</button>
+    <button class="btn-track" onclick="reloadSubTracks()"><i class="ti ti-refresh"></i> Reload</button>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button class="btn-track btn-danger" onclick="removeSelectedSubTrack()"><i class="ti ti-circle-minus"></i> Remove</button>
+      <button class="btn-track btn-danger" onclick="clearSubTracks()"><i class="ti ti-x"></i> Clear</button>
+    </div>
+  </div>
+  <div id="sub-track-list">
+    <div class="track-empty">No subtitle tracks — open a source file first</div>
+  </div>
+</div>
+
+<!-- CHAPTERS -->
+<div class="panel" id="panel-chapters">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="chapter-markers" checked> Chapter Markers
+    </label>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn-sm">Import Chapters</button>
+      <button class="btn-sm">Export Chapters</button>
+    </div>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="chapters-table" id="chapters-table">
+      <thead><tr><th>Index</th><th>Start</th><th>Duration</th><th>Title</th></tr></thead>
+      <tbody id="chapters-body">
+        <tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">No chapters — open a source file first</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAGS -->
+<div class="panel" id="panel-tags">
+  <div class="field-row"><span class="field-label">Title:</span><input type="text" id="tag-title" class="field-select"></div>
+  <div class="field-row"><span class="field-label">Actors:</span><input type="text" id="tag-actors" class="field-select"></div>
+  <div class="field-row"><span class="field-label">Director:</span><input type="text" id="tag-director" class="field-select"></div>
+  <div class="field-row"><span class="field-label">Release Date:</span><input type="text" id="tag-release-date" class="field-select" placeholder="YYYY-MM-DD"></div>
+  <div class="field-row"><span class="field-label">Comment:</span><input type="text" id="tag-comment" class="field-select"></div>
+  <div class="field-row"><span class="field-label">Genre:</span><input type="text" id="tag-genre" class="field-select"></div>
+  <div class="field-row"><span class="field-label">Description:</span><input type="text" id="tag-description" class="field-select"></div>
+  <div class="field-row" style="align-items:flex-start">
+    <span class="field-label" style="padding-top:6px">Plot:</span>
+    <textarea id="tag-plot" rows="5" style="flex:1"></textarea>
+  </div>
+</div>
+
+</div><!-- /panels -->
+
+</div><!-- /desktop-left -->
+</div><!-- /desktop-body -->
+<!-- ── Save As bar ── -->
+<!-- Save As row -->
+<div class="save-bar" style="border-top:1px solid var(--border);">
+  <span class="save-label desktop-only">Save As:</span>
+  <input type="text" id="save-as-footer" class="save-input" placeholder="Save As..." style="min-width:0;flex:1;">
+  <button id="to-path" onclick="openFileBrowser('output')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);font-size:13px;cursor:pointer;padding:6px 12px;border-radius:var(--radius);font-family:inherit;display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;min-height:34px;"><i class="ti ti-folder" style="font-size:18px"></i><span id="to-path-label-footer" class="desktop-only"> Select output</span></button>
+</div>
+<!-- Status + When Done on same line -->
+<div style="display:flex;align-items:center;padding:3px 10px;background:var(--nav);border-top:1px solid var(--border);flex-shrink:0;gap:8px;">
+  <span id="status-text" style="font-size:12px;color:var(--text2);flex:1;">No source selected</span>
+  <span style="font-size:12px;color:var(--text3);flex-shrink:0;">When Done:</span>
+  <select class="when-done-sel" id="when-done-footer">
+    <option>Do Nothing</option>
+    <option>Send Notification</option>
+  </select>
+</div>
+<!-- Status bar merged into bottom row above -->
+</div><!-- /app-body -->
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════
+     FILE BROWSER SHEET
+══════════════════════════════════════════ -->
+<div class="sheet" id="file-sheet">
+  <div class="sheet-inner">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title" id="file-sheet-title">Open Source</div>
+      <button class="icon-btn" onclick="closeSheet('file-sheet')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="file-breadcrumb-bar" style="display:flex;align-items:center;gap:0;padding:0 8px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;flex-shrink:0;min-height:36px;"></div>
+    <div class="sheet-body">
+      <div class="sidebar" id="file-sidebar">
+        <div class="sidebar-section">Locations</div>
+        <div id="sidebar-locations"></div>
+        <div class="sidebar-add" onclick="addLocation()"><i class="ti ti-plus" style="font-size:15px"></i> Add location</div>
+      </div>
+      <div class="file-pane">
+        <div class="file-header">
+          <span class="file-header-name">Name</span>
+          <span class="file-header-size">Size</span>
+        </div>
+        <div id="file-list"></div>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <div class="single-title-row" id="single-title-wrap">
+        <input type="checkbox" id="single-title">
+        <label for="single-title" style="cursor:pointer">Single Title</label>
+      </div>
+      <div id="create-folder-btn" style="display:none">
+        <button class="btn-sm" onclick="createFolder()" style="display:flex;align-items:center;gap:4px"><i class="ti ti-folder-plus" style="font-size:14px"></i> Create Folder</button>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn-cancel" onclick="closeSheet('file-sheet')">Cancel</button>
+        <button class="btn-primary" id="file-open-btn" onclick="confirmFileSelection()">Open</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     QUEUE PANEL
+══════════════════════════════════════════ -->
+<div class="queue-panel" id="queue-panel" onclick="event.target===this&&closeQueue()">
+<div class="queue-inner">
+  <div class="queue-toolbar">
+    <div class="queue-toolbar-left">
+      <button class="btn-queue-action primary" id="queue-start-btn" onclick="startQueuedJobs()"><i class="ti ti-player-play"></i> Start</button>
+      <button class="btn-queue-action" id="queue-pause-btn" onclick="togglePauseResume()" style="display:none;color:var(--yellow);border-color:var(--yellow)"><i class="ti ti-player-pause"></i> Pause</button>
+      <button class="btn-queue-action" id="queue-resume-btn" onclick="togglePauseResume()" style="display:none"><i class="ti ti-player-play"></i> Resume</button>
+
+    </div>
+    <div class="queue-toolbar-center">
+      <div class="queue-title">Queue</div>
+      <div class="queue-subtitle" id="queue-subtitle">0 encodes pending</div>
+    </div>
+    <div class="queue-toolbar-right" style="position:relative;">
+      <button class="icon-btn" onclick="toggleQueueMenu(event)" title="More options"><i class="ti ti-dots-vertical"></i></button>
+      <div id="queue-dot-menu" class="dropdown" style="min-width:180px;">
+        <div class="dd-item" onclick="queueAction('resetFailed')">Reset Failed Jobs</div>
+        <div class="dd-item" onclick="queueAction('resetAll')">Reset All Jobs</div>
+        <div class="dd-sep"></div>
+        <div class="dd-item" onclick="queueAction('clearCompleted')">Clear Completed Jobs</div>
+        <div class="dd-item" onclick="queueAction('clearAll')">Clear All Jobs</div>
+        <div class="dd-sep"></div>
+        <div class="dd-item" onclick="queueAction('import')">Import Queue…</div>
+        <div class="dd-item" onclick="queueAction('export')">Export Queue…</div>
+      </div>
+      <button class="icon-btn" onclick="closeQueue()" title="Close"><i class="ti ti-x"></i></button>
+    </div>
+  </div>
+  <div class="queue-body">
+    <div class="queue-list" id="queue-list"></div>
+    <div class="queue-detail" id="queue-detail" style="display:flex;flex-direction:column;position:relative;">
+      <div class="q-detail-tabs" id="queue-right-tabs">
+        <button class="q-detail-tab active" onclick="switchQueueTab(this,'qtab-summary')">Summary</button>
+        <button class="q-detail-tab" onclick="switchQueueTab(this,'qtab-statistics')">Statistics</button>
+        <button class="q-detail-tab" onclick="switchQueueTab(this,'qtab-activity');startQueueActivityPoll()">Activity Log</button>
+      </div>
+      <div id="qtab-summary" style="flex:1;overflow-y:auto;min-height:0;">
+        <div style="padding:30px;text-align:center;color:var(--text3)">Select a job to view details</div>
+      </div>
+      <div id="qtab-statistics" style="flex:1;overflow-y:auto;display:none;min-height:0;">
+        <div style="padding:30px;text-align:center;color:var(--text3)">No statistics available yet</div>
+      </div>
+      <div id="qtab-activity" style="display:none;">
+        <div id="qtab-activity-file" style="font-size:11px;color:var(--accent);padding:4px 12px;background:var(--nav);border-bottom:1px solid var(--border);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        <div id="qtab-activity-log" style="overflow-y:auto;height:calc(100% - 26px);font-family:monospace;font-size:11px;color:var(--text2);padding:10px 12px;white-space:pre-wrap;word-break:break-all;line-height:1.5;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="when-done-row">
+    <span style="font-size:12px;color:var(--text3)">When Done:</span>
+    <select class="when-done-sel" id="queue-when-done">
+      <option>Do Nothing</option>
+      <option>Send Notification</option>
+    </select>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PRESETS PANEL
+══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════
+     ACTIVITY LOG PANEL
+══════════════════════════════════════════ -->
+<div class="activity-panel" id="activity-panel" onclick="event.target===this&&closeActivity()">
+<div class="activity-inner">
+  <div class="activity-header">
+    <span class="activity-title">Activity Log</span>
+    <button class="icon-btn" onclick="closeActivity()" title="Close"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="activity-file" id="activity-file">No active job</div>
+  <div class="activity-log" id="activity-log">Waiting for encode to start...</div>
+</div>
+
+</div>
+<!-- ══════════════════════════════════════════
+     PREFERENCES PANEL
+══════════════════════════════════════════ -->
+<div class="prefs-panel" id="prefs-panel" onclick="event.target===this&&closePrefsPanel()">
+  <div class="prefs-inner">
+    <div class="prefs-header">
+      <div class="prefs-tabs">
+        <button class="prefs-tab active" onclick="switchPrefsTab(this,'prefs-general')">General</button>
+        <button class="prefs-tab" onclick="switchPrefsTab(this,'prefs-queue')">Queue</button>
+        <button class="prefs-tab" onclick="switchPrefsTab(this,'prefs-advanced')">Advanced</button>
+      </div>
+      <button class="icon-btn" onclick="closePrefsPanel()"><i class="ti ti-x"></i></button>
+    </div>
+
+    <!-- General tab -->
+    <div class="prefs-body" id="prefs-general">
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-auto-naming">
+        <label for="pref-auto-naming">Use automatic naming (uses modified source name)</label>
+      </div>
+      <div class="prefs-row" style="padding-left:24px">
+        <label style="flex:none;color:var(--text3)">Auto-Name Template</label>
+        <input type="text" id="pref-auto-name-template" placeholder="{source}">
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-mp4-extension">
+        <label for="pref-mp4-extension">Use iPod/iTunes friendly (.m4v) file extension for MP4</label>
+      </div>
+      <div class="prefs-row">
+        <label style="flex:none">Number of previews</label>
+        <input type="number" id="pref-num-previews" min="1" max="60" value="10">
+      </div>
+      <div class="prefs-row">
+        <label style="flex:none">Minimum DVD/Blu-ray title duration (seconds)</label>
+        <input type="number" id="pref-min-duration" min="0" value="10">
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-max-duration-enabled">
+        <label for="pref-max-duration-enabled">Maximum DVD/Blu-ray title duration (seconds)</label>
+        <input type="number" id="pref-max-duration" min="0" value="0">
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-keep-dupes">
+        <label for="pref-keep-dupes">Keep duplicate titles</label>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-same-settings-batch">
+        <label for="pref-same-settings-batch">Use the same settings for all titles in a batch</label>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-show-preview-summary">
+        <label for="pref-show-preview-summary">Show preview image in Summary tab</label>
+      </div>
+      <div style="font-size:13px;margin-top:10px">Excluded File Extensions:</div>
+      <div class="prefs-ext-list" id="pref-ext-list"></div>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <input type="text" id="pref-ext-input" placeholder="e.g. jpg" style="flex:1;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;">
+        <button class="btn-sm" onclick="prefsAddExt()"><i class="ti ti-plus"></i></button>
+        <button class="btn-sm" onclick="prefsRemoveExt()"><i class="ti ti-minus"></i></button>
+      </div>
+    </div>
+
+    <!-- Queue tab -->
+    <div class="prefs-body" id="prefs-queue" style="display:none">
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-pause-low-disk">
+        <label for="pref-pause-low-disk">Pause queue if disk space is lower than:</label>
+        <input type="number" id="pref-low-disk-gb" min="1" value="10" style="width:50px">
+        <span style="font-size:13px;color:var(--text3)">GB</span>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-clear-completed">
+        <label for="pref-clear-completed">Clear completed jobs after an encode completes</label>
+      </div>
+      <div class="prefs-section">Power Saving</div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-pause-power-saver">
+        <label for="pref-pause-power-saver">Pause encoding when in Power Saver mode</label>
+      </div>
+      <div class="prefs-section">When Done</div>
+      <div class="prefs-row">
+        <label style="flex:none">Default action when queue is completed:</label>
+        <select id="pref-when-done-default">
+          <option>Do Nothing</option>
+          <option>Sleep</option>
+          <option>Shutdown</option>
+          <option>Send Notification</option>
+        </select>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-notify-queue-complete">
+        <label for="pref-notify-queue-complete">Show notification when queue is completed</label>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-notify-each-complete">
+        <label for="pref-notify-each-complete">Show notification when each item is completed</label>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-send-file-enabled">
+        <label for="pref-send-file-enabled" style="flex:none">Send file to:</label>
+        <input type="text" id="pref-send-file-to">
+      </div>
+    </div>
+
+    <!-- Advanced tab -->
+    <div class="prefs-body" id="prefs-advanced" style="display:none">
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-custom-temp-enabled">
+        <label for="pref-custom-temp-enabled" style="flex:none">Set a custom directory for HandBrake temporary files</label>
+      </div>
+      <div class="prefs-row" style="padding-left:24px">
+        <input type="text" id="pref-temp-dir" placeholder="(None)">
+      </div>
+      <div class="prefs-row">
+        <input type="number" id="pref-cq-granularity" min="0" max="2" step="1" value="1" style="width:50px">
+        <label>Constant Quality fractional granularity</label>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-use-dvdnav">
+        <label for="pref-use-dvdnav">Use dvdnav (instead of libdvdread)</label>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-logs-with-movie">
+        <label for="pref-logs-with-movie">Put individual encode logs in same location as movie</label>
+      </div>
+      <div class="prefs-row">
+        <input type="number" id="pref-log-verbosity" min="0" max="2" value="1" style="width:50px">
+        <label>Activity Log Verbosity Level</label>
+      </div>
+      <div class="prefs-row">
+        <select id="pref-log-longevity">
+          <option>Week</option>
+          <option>Month</option>
+          <option>Year</option>
+          <option>Indefinite</option>
+        </select>
+        <label>Activity Log Longevity</label>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-scale-hd-previews">
+        <label for="pref-scale-hd-previews">Scale down High Definition previews</label>
+      </div>
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-auto-scan-dvd">
+        <label for="pref-auto-scan-dvd">Automatically Scan DVD when loaded</label>
+      </div>
+      <div class="prefs-row">
+        <input type="number" id="pref-activity-font-size" min="6" max="24" value="8" style="width:50px">
+        <label>Activity Window Font Size</label>
+      </div>
+    </div>
+
+    <div class="prefs-footer">
+      <button class="btn-cancel" onclick="closePrefsPanel()">Cancel</button>
+      <button class="btn-primary" onclick="savePrefs()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="presets-panel" id="presets-panel">
+  <div class="presets-inner">
+    <div class="presets-header">
+      <span style="font-size:15px;font-weight:600">Presets</span>
+      <button class="icon-btn" onclick="closePresets()"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="flex:1;overflow-y:auto" id="presets-list"></div>
+    <div style="border-top:1px solid var(--border)">
+      <div class="preset-add-btn" onclick="saveNewPreset()">
+        <i class="ti ti-plus" style="font-size:16px"></i> Save current settings as preset
+      </div>
+      <div class="preset-add-btn" onclick="document.getElementById('preset-import-input').click()">
+        <i class="ti ti-upload" style="font-size:16px"></i> Import from HandBrake (.json)
+      </div>
+      <div class="preset-add-btn" onclick="resetSession()" style="color:var(--red);border-top:1px solid var(--border)">
+        <i class="ti ti-refresh" style="font-size:16px"></i> Clear session &amp; reset
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADD AUDIO TRACK MODAL
+══════════════════════════════════════════ -->
+<!-- ── Custom alert/confirm dialog ── -->
+<div class="modal-overlay" id="hb-dialog">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title" id="hb-dialog-title"></div>
+    <div id="hb-dialog-msg" style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:4px;"></div>
+    <div class="modal-actions" id="hb-dialog-actions"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="add-audio-modal">
+  <div class="modal">
+    <div class="modal-title">Add Audio Track</div>
+    <div class="field-row"><span class="field-label">Track:</span>
+      <select id="modal-audio-track" class="field-select"></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('add-audio-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmAddAudio()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD SUBTITLE MODAL -->
+<div class="modal-overlay" id="add-sub-modal">
+  <div class="modal">
+    <div class="modal-title">Add Subtitle Track</div>
+    <div class="field-row"><span class="field-label">Track:</span>
+      <select id="modal-sub-track" class="field-select"></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('add-sub-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmAddSub()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE PRESET MODAL -->
+<div class="modal-overlay" id="save-preset-modal">
+  <div class="modal">
+    <div class="modal-title">Save New Preset</div>
+    <div class="field-row"><span class="field-label">Name:</span>
+      <input type="text" id="new-preset-name" class="field-select" placeholder="My Preset"></div>
+    <div class="field-row"><span class="field-label">Category:</span>
+      <input type="text" id="new-preset-cat" class="field-select" value="My Presets"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('save-preset-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmSavePreset()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD LOCATION MODAL -->
+<div class="modal-overlay" id="add-location-modal">
+  <div class="modal">
+    <div class="modal-title">Add Storage Location</div>
+    <div class="field-row"><span class="field-label">Name:</span>
+      <input type="text" id="new-loc-name" class="field-select" placeholder="e.g. RAID_10TB_Storage"></div>
+    <div class="field-row"><span class="field-label">Path:</span>
+      <input type="text" id="new-loc-path" class="field-select" placeholder="/mnt/tank/media"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('add-location-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmAddLocation()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+const SERVER = window.location.origin;
+const ENC_PRESETS = ["ultrafast","superfast","veryfast","faster","fast","medium","slow","slower","veryslow"];
+const AUDIO_ENCODERS = ["copy","av_aac","ac3","eac3","mp3","vorbis","flac16","flac24","opus","truehd","dts"];
+const AUDIO_MIXDOWNS = ["none","mono","stereo","dpl1","dpl2","5point1","6point1","7point1","7point1_wide"];
+const AUDIO_SAMPLERATES = ["0","22050","24000","32000","44100","48000"];
+
+// ── State ──────────────────────────────────────────────────────────────────
+let sourceFile = null;
+let previewSteps = 10;
+let previewCurrentStep = 2;
+let sourceInfo = null; // {audio, subtitles, chapters, video}
+let activeAudioTracks = [];
+let activeSubTracks = [];
+let fileBrowserMode = "source";
+let selectedFilePath = null;
+let outputFolder = SERVER === window.location.origin ? "" : "";
+let currentPreset = null;
+let jobs = [];
+let selectedJobId = null;
+
+// Force activity tab hidden immediately on load — before any async code runs
+(function(){
+  const el = document.getElementById("qtab-activity");
+  if(el){ el.style.cssText = "display:none;"; }
+})();
+let config = {locations:[], presets:[]};
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadConfig();
+pollJobs();
+setInterval(pollJobs, 3000);
+
+// Load prefs on startup and apply frontend settings
+(async function applyPrefsOnLoad(){
+  try{
+    const r = await fetch(SERVER+"/api/prefs");
+    currentPrefs = await r.json();
+    // Apply activity log font size
+    const logEl = document.getElementById("activity-log");
+    if(logEl && currentPrefs.activity_font_size) logEl.style.fontSize = currentPrefs.activity_font_size+"px";
+    // Apply show preview in summary
+    const previewCol = document.getElementById("preview-col");
+    if(previewCol && currentPrefs.show_preview_summary===false) previewCol.style.display="none";
+    // Apply CQ granularity to RF slider
+    const rfSlider = document.getElementById("rf-slider");
+    if(rfSlider && currentPrefs.cq_granularity){
+      const step = [1, 0.5, 0.25][Math.min(2, Math.max(0, parseInt(currentPrefs.cq_granularity)-1))] || 1;
+      rfSlider.step = step;
+    }
+  }catch{}
+})();
+updatePresetLabel();
+
+// ── Config ─────────────────────────────────────────────────────────────────
+async function loadConfig(){
+  try{
+    const r = await fetch(SERVER+"/api/config");
+    config = await r.json();
+    renderPresetsList();
+  }catch{}
+}
+async function saveConfigToServer(){
+  await fetch(SERVER+"/api/config",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(config)});
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function showTab(name, btn){
+  // Hide all panels explicitly
+  document.querySelectorAll(".panel").forEach(p=>{
+    p.classList.remove("active");
+    p.style.display = "none";
+  });
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+
+  // Show target panel
+  const panel = document.getElementById("panel-"+name);
+  panel.classList.add("active");
+  panel.style.display = (name === "summary") ? "flex" : "block";
+
+  btn.classList.add("active");
+
+  // Preview only on Summary tab
+  const previewCol = document.getElementById("preview-col");
+  if(previewCol){
+    previewCol.style.display = (name === "summary" && sourceFile) ? "flex" : "none";
+  }
+}
+
+// ── File Browser ───────────────────────────────────────────────────────────
+function openFileBrowser(mode){
+  fileBrowserMode = mode;
+  selectedFilePath = null;
+  document.getElementById("file-sheet-title").textContent = mode==="source" ? "Open Source" : mode==="directory" ? "Open Directory" : "Destination Directory";
+  document.getElementById("file-open-btn").textContent = mode==="source" ? "Open" : mode==="directory" ? "Add All to Queue" : "Select";
+  document.getElementById("single-title-wrap").style.display = mode==="source" ? "flex" : "none";
+  document.getElementById("create-folder-btn").style.display = mode==="output" ? "block" : "none";
+  document.getElementById("file-breadcrumb-bar").innerHTML = "";
+  document.getElementById("file-sheet").classList.add("open");
+  renderSidebar();
+  if(config.locations.length){
+    browseLocation(config.locations[0].path);
+  } else {
+    document.getElementById("file-list").innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3)">Add a storage location using the sidebar</div>';
+  }
+}
+
+function closeSheet(id){ document.getElementById(id).classList.remove("open"); }
+
+function renderSidebar(){
+  const el = document.getElementById("sidebar-locations");
+  el.innerHTML = "";
+  config.locations.forEach((loc,i)=>{
+    const item = document.createElement("div");
+    item.className = "sidebar-item";
+    item.innerHTML = `<i class="ti ti-device-desktop"></i><span style="flex:1">${esc(loc.name)}</span>`;
+    item.onclick = ()=>{ document.querySelectorAll(".sidebar-item").forEach(x=>x.classList.remove("active")); item.classList.add("active"); browseLocation(loc.path); };
+    el.appendChild(item);
+  });
+}
+
+async function browseLocation(path){
+  const list = document.getElementById("file-list");
+  list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)"><i class="ti ti-loader spin" style="font-size:24px"></i></div>';
+  try{
+    const allParam = fileBrowserMode==="output" ? "&all=1" : "";
+    const r = await fetch(SERVER+"/api/browse?path="+encodeURIComponent(path)+allParam);
+    const data = await r.json();
+    renderFileList(data);
+  }catch{
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">Cannot reach server</div>';
+  }
+}
+
+let currentBrowsePath = "";
+function renderBreadcrumb(path){
+  const bar = document.getElementById("file-breadcrumb-bar");
+  bar.innerHTML = "";
+  if(!path) return;
+  // Find which location root this path is under
+  const loc = config.locations.find(l => path.startsWith(l.path));
+  const parts = path.split("/").filter(Boolean);
+  // Build clickable path segments styled like jlesage tabs
+  let built = "";
+  parts.forEach((part, i) => {
+    built += "/" + part;
+    const cap = built;
+    const tab = document.createElement("button");
+    tab.style.cssText = "padding:6px 12px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:12px;border-right:1px solid var(--border);white-space:nowrap;font-family:inherit;";
+    // Last segment is current — highlight it
+    if(i === parts.length - 1){
+      tab.style.color = "var(--text)";
+      tab.style.background = "var(--surface2)";
+    }
+    // Use location name for the root segment if found
+    tab.textContent = (i === 0 && loc) ? loc.name : part;
+    tab.onclick = () => browseLocation(cap);
+    bar.appendChild(tab);
+  });
+}
+
+function renderFileList(data){
+  currentBrowsePath = data.path;
+  renderBreadcrumb(data.path);
+  const list = document.getElementById("file-list");
+  list.innerHTML = "";
+  if(data.parent){
+    const up = document.createElement("div");
+    up.className = "file-row";
+    up.innerHTML = `<i class="ti ti-arrow-up file-row-icon"></i><span class="file-row-name">..</span>`;
+    up.onclick = ()=>browseLocation(data.parent);
+    list.appendChild(up);
+  }
+  if(!data.items || !data.items.length){
+    const empty = fileBrowserMode==="output" ? "Empty folder" : "No video files here";
+    list.innerHTML += `<div style="padding:20px;text-align:center;color:var(--text3)">${empty}</div>`;
+    return;
+  }
+  data.items.forEach(item=>{
+    // Filter out excluded extensions (from prefs)
+    if(!item.type || item.type==="file"){
+      const ext = item.name.split(".").pop().toLowerCase();
+      const excluded = currentPrefs?.excluded_extensions||[];
+      if(excluded.includes(ext)) return;
+    }
+    const row = document.createElement("div");
+    row.className = "file-row";
+    const isDir = item.type==="dir";
+    const isVideo = item.type==="video";
+    const icon = isDir ? "ti-folder" : isVideo ? "ti-video" : "ti-file";
+    const iconClass = isVideo ? "video" : "";
+    row.innerHTML = `
+      <i class="ti ${icon} file-row-icon ${iconClass}"></i>
+      <span class="file-row-name">${esc(item.name)}</span>
+      <span class="file-row-size">${isDir?"":fmtSize(item.size)}</span>`;
+    row.onclick = ()=>{
+      if(isDir){ browseLocation(item.path); return; }
+      document.querySelectorAll(".file-row").forEach(r=>r.classList.remove("selected"));
+      row.classList.add("selected");
+      selectedFilePath = item.path;
+    };
+    row.ondblclick = ()=>{ if(!isDir){ selectedFilePath=item.path; confirmFileSelection(); }};
+    list.appendChild(row);
+  });
+}
+
+async function createFolder(){
+  const name = prompt("New folder name:");
+  if(!name || !name.trim()) return;
+  const newPath = currentBrowsePath.replace(/\/$/, "") + "/" + name.trim();
+  try{
+    const r = await fetch(SERVER+"/api/mkdir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path:newPath})});
+    const data = await r.json();
+    if(data.ok){ browseLocation(currentBrowsePath); }
+    else{ hbAlert("Error: "+(data.error||"Unknown")); }
+  }catch(e){ hbAlert("Cannot reach server"); }
+}
+
+async function confirmFileSelection(){
+  if(fileBrowserMode==="output"){
+    outputFolder = selectedFilePath || currentBrowsePath;
+    const label = outputFolder.split("/").pop() || outputFolder;
+    document.getElementById("to-path-label-footer").textContent = label;
+    closeSheet("file-sheet");
+    return;
+  }
+  if(fileBrowserMode==="directory"){
+    const folderPath = selectedFilePath || currentBrowsePath;
+    if(!folderPath){ hbAlert("Navigate to a folder first"); return; }
+    closeSheet("file-sheet");
+    await addDirectoryToQueue(folderPath);
+    return;
+  }
+  if(!selectedFilePath){ hbAlert("Please select a file"); return; }
+  closeSheet("file-sheet");
+  try{
+    await loadSource(selectedFilePath);
+  }catch(e){
+    hbAlert("Error loading file: " + e.message);
+    console.error("loadSource error:", e);
+  }
+}
+
+const VIDEO_EXTS = new Set([".mkv",".mp4",".avi",".mov",".m4v",".ts",".m2ts",".wmv",".flv",".webm",".mpg",".mpeg"]);
+
+async function addDirectoryToQueue(folderPath){
+  try{
+    const r = await fetch(SERVER+"/api/browse?path="+encodeURIComponent(folderPath));
+    const data = await r.json();
+    const videoFiles = (data.items||[]).filter(i=>i.type==="video");
+    if(!videoFiles.length){ hbAlert("No video files found in that folder."); return; }
+    const settings = collectSettings();
+    const sameSettings = currentPrefs?.same_settings_batch !== false;
+    let added = 0;
+    for(const f of videoFiles){
+      let audioTracks = activeAudioTracks;
+      let subTracks = activeSubTracks;
+      // If not using same settings, scan each file for its own tracks
+      if(!sameSettings){
+        try{
+          const tr = await fetch(SERVER+"/api/tracks?path="+encodeURIComponent(f.path));
+          const info = await tr.json();
+          audioTracks = (info.audio||[]).map(t=>({...t,encoder:"copy",mixdown:"none",bitrate:320,samplerate:0,gain:0,name:t.title||""}));
+          subTracks = (info.subtitles||[]).map(t=>({...t,custom_name:t.title||"",burn_in:false}));
+        }catch{}
+      }
+      // Apply auto-name template
+      const stem = f.name.replace(/\.[^.]+$/, "");
+      const ext = settings.container==="mp4"?(currentPrefs?.mp4_extension?".m4v":".mp4"):".mkv";
+      let saveName = stem + ext;
+      if(currentPrefs?.auto_naming !== false){
+        const tmpl = currentPrefs?.auto_name_template || "{source}";
+        saveName = tmpl.replace("{source}", stem) + ext;
+      }
+      const params = {
+        ...settings,
+        input_file: f.path,
+        save_as: saveName,
+        audio_tracks: audioTracks,
+        subtitle_tracks: subTracks,
+        auto_start: false,
+      };
+      await fetch(SERVER+"/api/encode",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(params)});
+      added++;
+    }
+    pollJobs();
+    hbAlert(`Added ${added} file${added!==1?"s":""} to the queue.`);
+  }catch(e){
+    hbAlert("Error scanning folder: "+e.message);
+  }
+}
+
+async function loadSource(path){
+  try{
+    sourceFile = path;
+    const name = path.split("/").pop();
+    const setEl = (id, prop, val) => { const el=document.getElementById(id); if(el) el[prop]=val; };
+    const setTxt = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+
+    setEl("source-bar","innerHTML",`<b>Source:</b> Loading ${esc(name)}…`);
+    // Apply auto-name template from prefs
+    const stem2 = name.replace(/\.[^.]+$/,"");
+    let autoName = stem2;
+    if(currentPrefs?.auto_naming!==false){
+      const tmpl = currentPrefs?.auto_name_template||"{source}";
+      autoName = tmpl.replace("{source}", stem2);
+    }
+    const autoExt = currentPrefs?.mp4_extension && (collectSettings().container==="mp4") ? ".m4v" : ".mkv";
+    setEl("save-as-footer","value", autoName+autoExt);
+
+    try{
+      const r = await fetch(SERVER+"/api/tracks?path="+encodeURIComponent(path));
+      sourceInfo = await r.json();
+    }catch{
+      sourceInfo = {audio:[],subtitles:[],chapters:[],video:{}};
+    }
+
+    const v = sourceInfo.video||{};
+    setEl("source-bar","innerHTML",
+      `<b>Source:</b> ${esc(name)}, ${v.width||"?"}x${v.height||"?"}, ${v.fps||"?"} FPS, `+
+      `${sourceInfo.audio.length} Audio Track${sourceInfo.audio.length!==1?"s":""}, `+
+      `${sourceInfo.subtitles.length} Subtitle Track${sourceInfo.subtitles.length!==1?"s":""}`);
+
+    // Dimension info
+    if(v.width){
+      const sdi = document.getElementById("source-dims-info");
+      if(sdi) sdi.style.display="block";
+      setTxt("dim-storage",`${v.width}x${v.height}`);
+      setTxt("dim-display",`${v.width}x${v.height}`);
+      setTxt("dim-aspect","16:9");
+      const fd = document.getElementById("final-dims");
+      if(fd) fd.style.display="block";
+      setTxt("final-storage",`${v.width}x${v.height}`);
+      setTxt("final-display",`${v.width}x${v.height}`);
+      setTxt("final-aspect","16:9");
+    }
+
+    // Title dropdown
+    const ts = document.getElementById("title-select");
+    const chCount = sourceInfo.chapters.length || 1;
+    if(ts) ts.innerHTML = `<option value="1">1 - ${esc(name)}</option>`;
+    setEl("range-end","value", chCount);
+    setEl("range-start","value", 1);
+
+    // Auto-populate tracks
+    activeAudioTracks = sourceInfo.audio.map(t=>({
+      ...t, encoder:"copy", mixdown:"none", bitrate:320, samplerate:0, gain:0, name:t.title||""
+    }));
+    activeSubTracks = sourceInfo.subtitles.map(t=>({
+      ...t, custom_name:t.title||"", burn_in:false
+    }));
+
+    renderAudioTracks();
+    renderSubTracks();
+    renderChapters();
+    renderSummary();
+
+    // Switch to summary tab and load preview
+    const summaryTab = document.querySelector(".tab");
+    if(summaryTab) showTab("summary", summaryTab);
+    loadPreview(path);
+
+    saveSettingsToStorage();
+    updateStartStopBtn();
+  }catch(e){
+    const sb = document.getElementById("source-bar");
+    if(sb) sb.innerHTML = `<b style="color:var(--red)">Error loading source: ${esc(e.message)}</b>`;
+    console.error("loadSource error:", e);
+  }
+}
+
+
+// ── Summary ────────────────────────────────────────────────────────────────
+function renderSummary(){
+  if(!sourceFile){return;}
+  const v = sourceInfo.video||{};
+  const enc = document.getElementById("video-encoder").value;
+  const fps = document.getElementById("framerate").value;
+  const frMode = document.querySelector('input[name="fr-mode"]:checked')?.value||"cfr";
+  const deinterlace = document.getElementById("deinterlace").value;
+  const deblock = document.getElementById("deblock").value;
+  const chMarkers = document.getElementById("chapter-markers").checked;
+
+  // Duration
+  const durSecs = parseFloat(v.duration||0);
+  let durStr = "—";
+  if(durSecs>0){
+    const h=Math.floor(durSecs/3600),m=Math.floor((durSecs%3600)/60),s=Math.floor(durSecs%60);
+    durStr=`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  // Tracks line
+  const encLabel=enc.replace("h265_10bit","H.265 10-bit (x265)").replace("h265","H.265 (x265)")
+    .replace("h264_10bit","H.264 10-bit (x264)").replace("h264","H.264 (x264)")
+    .replace("av1_10bit","AV1 10-bit").replace("av1","AV1").replace("vp9","VP9")
+    .replace("h265_nvenc","H.265 NVENC").replace("h264_nvenc","H.264 NVENC");
+  // Show actual source fps when "same as source" selected
+  const sourceFps = v.fps || "?";
+  const fpsLabel = fps==="same" ? `${sourceFps} FPS` : `${fps} FPS`;
+  const frLabel = frMode==="cfr" ? "CFR" : "VFR";
+  const videoLine = v.width ? `${encLabel}, ${fpsLabel} ${frLabel}` : "";
+  const audioLines=activeAudioTracks.map(t=>{
+    const lang=t.language&&t.language!=="und"?t.language.toUpperCase():(t.title||`Track ${t.track||"?"}`);
+    const codec=t.codec?` (${t.codec.toUpperCase()})`:"";
+    const enc2=!t.encoder||t.encoder==="copy"?"Passthru":`${t.encoder.replace("av_","").replace("copy:","").toUpperCase()} Passthru`;
+    const mix=t.mixdown&&t.mixdown!=="none"?t.mixdown.charAt(0).toUpperCase()+t.mixdown.slice(1):"Stereo";
+    return `${mix}${codec} - ${lang}, ${enc2}`;
+  });
+  const subLines=activeSubTracks.map(t=>{
+    const lang=t.language&&t.language!=="und"?t.language.toUpperCase():(t.title||"Unknown");
+    const codec=(t.codec||"PGS").toUpperCase();
+    const flags=[t.forced?"Forced":"",t.burn_in?"Burn-in":"",t.default?"Default":""].filter(Boolean).join(", ");
+    return `${lang} (${codec})${flags?" — "+flags:""}`;
+  });
+  const tracksArr=[videoLine,...audioLines,...subLines,chMarkers?"Chapter Markers":""].filter(Boolean);
+
+  // Filters
+  const filterParts=[];
+  if(deinterlace!=="off"){filterParts.push("Comb Detect");filterParts.push(deinterlace.charAt(0).toUpperCase()+deinterlace.slice(1));}
+  if(deblock!=="off") filterParts.push("Deblock");
+  const denoise=document.getElementById("denoise")?.value;
+  if(denoise&&denoise!=="off") filterParts.push(denoise.charAt(0).toUpperCase()+denoise.slice(1));
+  const sharpen=document.getElementById("sharpen")?.value;
+  if(sharpen&&sharpen!=="off") filterParts.push(sharpen.charAt(0).toUpperCase()+sharpen.slice(1));
+
+  // Size
+  const sizeStr=v.width
+    ?`${v.width}x${v.height} storage, ${v.width}x${v.height} display\n1:1 Pixel Aspect Ratio\n16:9 Display Aspect Ratio`
+    :"—";
+
+  const rows=[
+    ["Duration", durStr],
+    ["Tracks",   tracksArr.join("\n")||"—"],
+    ["Filters",  filterParts.join(", ")||"—"],
+    ["Size",     sizeStr],
+  ];
+
+  document.getElementById("summary-content").innerHTML=rows.map(([k,val])=>
+    `<div class="summary-row"><div class="sum-key">${esc(k)}</div><div class="sum-val">${esc(val).replace(/\n/g,"<br>")}</div></div>`
+  ).join("");
+}
+// ── Audio Tracks ───────────────────────────────────────────────────────────
+function renderAudioTracks(){
+  const el = document.getElementById("audio-track-list");
+  if(!activeAudioTracks.length){
+    el.innerHTML='<div class="track-empty">No audio tracks added</div>'; return;
+  }
+  el.innerHTML="";
+  el.className="track-list";
+  activeAudioTracks.forEach((t,i)=>{
+    const row = document.createElement("div");
+    row.className="track-row";
+    const srcLabel = `${t.track} - ${t.language||"und"} (${t.codec||"?"}, ${t.channels||2} ch)`;
+    const destLabel = `${t.encoder||"copy"} (${AUDIO_MIXDOWNS[AUDIO_MIXDOWNS.indexOf(t.mixdown)]||t.mixdown||"none"})`;
+    row.innerHTML=`
+      <div class="track-header" onclick="toggleTrackDetail('aud-detail-${i}')">
+        <span class="track-expand"><i class="ti ti-chevron-right"></i></span>
+        <div class="track-info">
+          <div class="track-info-main">${esc(srcLabel)}</div>
+          <div class="track-info-sub">–&gt;&nbsp;${esc(destLabel)}</div>
+        </div>
+        <button class="btn-track btn-danger" style="margin:4px 8px" onclick="event.stopPropagation();removeAudioTrack(${i})"><i class="ti ti-trash"></i></button>
+      </div>
+      <div class="track-detail" id="aud-detail-${i}">
+        <div class="field-row"><span class="field-label">Name:</span><input type="text" value="${esc(t.name||"")}" oninput="activeAudioTracks[${i}].name=this.value;renderSummary()"></div>
+        <div class="field-row"><span class="field-label">Encoder:</span>
+          <select class="field-select" onchange="activeAudioTracks[${i}].encoder=this.value;renderAudioTracks()">
+            ${AUDIO_ENCODERS.map(e=>`<option${t.encoder===e?" selected":""}>${e}</option>`).join("")}
+          </select></div>
+        <div class="field-row"><span class="field-label">Mixdown:</span>
+          <select class="field-select" onchange="activeAudioTracks[${i}].mixdown=this.value">
+            ${AUDIO_MIXDOWNS.map(m=>`<option${t.mixdown===m?" selected":""}>${m}</option>`).join("")}
+          </select></div>
+        <div class="field-row"><span class="field-label">Bitrate:</span>
+          <select class="field-select" onchange="activeAudioTracks[${i}].bitrate=parseInt(this.value)">
+            ${[32,40,48,56,64,80,96,112,128,160,192,224,256,320,384,448,512,576,640,768,960,1152,1344,1536].map(b=>`<option${t.bitrate===b?" selected":""}>${b}</option>`).join("")}
+          </select></div>
+        <div class="field-row"><span class="field-label">Samplerate:</span>
+          <select class="field-select" onchange="activeAudioTracks[${i}].samplerate=parseInt(this.value)">
+            <option value="0"${t.samplerate===0?" selected":""}>Same as source</option>
+            ${["22050","24000","32000","44100","48000"].map(s=>`<option${t.samplerate===parseInt(s)?" selected":""}>${s}</option>`).join("")}
+          </select></div>
+        <div class="field-row"><span class="field-label">Gain:</span>
+          <div class="inline-row"><input type="number" value="${t.gain||0}" min="-20" max="20" class="num-input" oninput="activeAudioTracks[${i}].gain=parseInt(this.value)||0"> dB</div></div>
+        <div class="field-row"><span class="field-label"></span>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" ${t.default?"checked":""} onchange="setDefaultAudio(${i})"> Default track
+          </label></div>
+      </div>`;
+    el.appendChild(row);
+  });
+}
+
+function toggleTrackDetail(id){
+  const el=document.getElementById(id);
+  el && el.classList.toggle("open");
+}
+
+function setDefaultAudio(idx){
+  activeAudioTracks.forEach((t,i)=>t.default=(i===idx));
+  renderAudioTracks();
+}
+
+function removeAudioTrack(i){ activeAudioTracks.splice(i,1); renderAudioTracks(); renderSummary(); saveSession(); }
+function clearAudioTracks(){ activeAudioTracks=[]; renderAudioTracks(); saveSession(); }
+function reloadAudioTracks(){ activeAudioTracks=sourceInfo?(sourceInfo.audio||[]).map(t=>({...t,encoder:"copy",mixdown:"none",bitrate:320,samplerate:0,gain:0,name:t.title||""})):[];renderAudioTracks(); }
+
+function addAudioTrack(){
+  if(!sourceInfo||!sourceInfo.audio.length){hbAlert("Open a source file first");return;}
+  const sel=document.getElementById("modal-audio-track");
+  sel.innerHTML=sourceInfo.audio.map(t=>`<option value="${t.track}">${t.track} - ${t.language||"und"} (${t.codec})</option>`).join("");
+  openModal("add-audio-modal");
+}
+function confirmAddAudio(){
+  const track=parseInt(document.getElementById("modal-audio-track").value);
+  const src=sourceInfo.audio.find(t=>t.track===track);
+  if(src) activeAudioTracks.push({...src,encoder:"copy",mixdown:"none",bitrate:320,samplerate:0,gain:0,name:src.title||""});
+  closeModal("add-audio-modal");
+  renderAudioTracks();
+}
+
+// ── Subtitle Tracks ────────────────────────────────────────────────────────
+function renderSubTracks(){
+  const el=document.getElementById("sub-track-list");
+  if(!activeSubTracks.length){
+    el.innerHTML='<div class="track-empty">No subtitle tracks added</div>';
+    el.className="";
+    return;
+  }
+  el.innerHTML="";
+  el.className="track-list";
+  activeSubTracks.forEach((t,i)=>{
+    const row=document.createElement("div");
+    row.className="track-row";
+    const srcLabel=`${t.track} - ${t.language||"und"} (${t.codec||"?"})`;
+    row.innerHTML=`
+      <div class="track-header" onclick="toggleTrackDetail('sub-detail-${i}')">
+        <span class="track-expand"><i class="ti ti-chevron-right"></i></span>
+        <div class="track-info">
+          <div class="track-info-main">${esc(srcLabel)}</div>
+          <div class="track-info-sub">–&gt;&nbsp;Passthru${t.default?" · Default":""}${t.forced?" · Forced":""}</div>
+        </div>
+        <button class="btn-track btn-danger" style="margin:4px 8px" onclick="event.stopPropagation();removeSubTrack(${i})"><i class="ti ti-trash"></i></button>
+      </div>
+      <div class="track-detail" id="sub-detail-${i}">
+        <div class="field-row"><span class="field-label">Name:</span>
+          <input type="text" value="${esc(t.custom_name||t.title||"")}" oninput="activeSubTracks[${i}].custom_name=this.value;renderSubTracks()"></div>
+        <div class="field-row"><span class="field-label"></span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" ${t.default?"checked":""} onchange="setDefaultSub(${i})"> Default</label>
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" ${t.forced?"checked":""} onchange="activeSubTracks[${i}].forced=this.checked;renderSubTracks()"> Forced</label>
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" ${t.burn_in?"checked":""} onchange="activeSubTracks[${i}].burn_in=this.checked;renderSubTracks()"> Burn In</label>
+          </label></div>
+      </div>`;
+    el.appendChild(row);
+  });
+}
+
+function setDefaultSub(idx){ activeSubTracks.forEach((t,i)=>t.default=(i===idx)); renderSubTracks(); }
+function removeSubTrack(i){ activeSubTracks.splice(i,1); renderSubTracks(); renderSummary(); saveSession(); }
+function clearSubTracks(){ activeSubTracks=[]; renderSubTracks(); saveSession(); }
+function reloadSubTracks(){ activeSubTracks=sourceInfo?(sourceInfo.subtitles||[]).map(t=>({...t,custom_name:t.title||"",burn_in:false})):[];renderSubTracks(); }
+
+function addSubTrack(){
+  if(!sourceInfo||!sourceInfo.subtitles.length){hbAlert("Open a source file first");return;}
+  const sel=document.getElementById("modal-sub-track");
+  sel.innerHTML=sourceInfo.subtitles.map(t=>`<option value="${t.track}">${t.track} - ${t.language||"und"} (${t.codec})</option>`).join("");
+  openModal("add-sub-modal");
+}
+function confirmAddSub(){
+  const track=parseInt(document.getElementById("modal-sub-track").value);
+  const src=sourceInfo.subtitles.find(t=>t.track===track);
+  if(src) activeSubTracks.push({...src,custom_name:src.title||"",burn_in:false});
+  closeModal("add-sub-modal");
+  renderSubTracks();
+}
+
+// ── Chapters ───────────────────────────────────────────────────────────────
+function renderChapters(){
+  const tbody=document.getElementById("chapters-body");
+  if(!sourceInfo||!sourceInfo.chapters.length){
+    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">No chapters found in source</td></tr>';
+    return;
+  }
+  tbody.innerHTML=sourceInfo.chapters.map((ch,i)=>`
+    <tr>
+      <td>${ch.index}</td>
+      <td>${ch.start}</td>
+      <td>${ch.duration}</td>
+      <td><input value="${esc(ch.title)}" oninput="sourceInfo.chapters[${i}].title=this.value"></td>
+    </tr>`).join("");
+}
+
+// ── Video options helpers ──────────────────────────────────────────────────
+function updatePresetLabel(){
+  const labels=["ultrafast","superfast","veryfast","faster","fast","medium","slow","slower","veryslow"];
+  const v=parseInt(document.getElementById("enc-preset-slider").value);
+  document.getElementById("enc-preset-label").textContent=labels[v];
+}
+
+function toggleQualityMode(){
+  const isCQ=document.querySelector('input[name="q-mode"]:checked')?.value==="cq";
+  document.getElementById("bitrate-val").disabled=isCQ;
+  document.getElementById("multi-pass").disabled=isCQ;
+  document.getElementById("turbo-pass").disabled=isCQ;
+}
+
+function updateEncoderOptions(){
+  // Could update tune/profile/level options per codec
+  renderSummary();
+}
+
+function toggleCropInputs(){
+  document.getElementById("crop-inputs").style.display=
+    document.getElementById("cropping").value==="custom"?"block":"none";
+}
+function toggleDeinterlacePreset(){}
+function toggleDenoisePreset(){
+  document.getElementById("denoise-preset-row").style.display=
+    document.getElementById("denoise").value!=="off"?"flex":"none";
+}
+function toggleSharpenPreset(){
+  document.getElementById("sharpen-preset-row").style.display=
+    document.getElementById("sharpen").value!=="off"?"flex":"none";
+}
+
+// ── Presets ────────────────────────────────────────────────────────────────
+function openPresets(){ loadConfig().then(renderPresetsList); document.getElementById("presets-panel").classList.add("open"); }
+function closePresets(){ document.getElementById("presets-panel").classList.remove("open"); }
+
+// ── Preferences ────────────────────────────────────────────────────────────
+let currentPrefs = null;
+let selectedExtIndex = -1;
+
+async function openPrefsPanel(){
+  try{
+    const r = await fetch(SERVER+"/api/prefs");
+    currentPrefs = await r.json();
+  }catch{
+    currentPrefs = {};
+  }
+  populatePrefsUI(currentPrefs);
+  document.getElementById("prefs-panel").classList.add("open");
+}
+
+function closePrefsPanel(){
+  document.getElementById("prefs-panel").classList.remove("open");
+}
+
+function switchPrefsTab(btn, showId){
+  document.querySelectorAll(".prefs-tab").forEach(t=>t.classList.remove("active"));
+  btn.classList.add("active");
+  ["prefs-general","prefs-queue","prefs-advanced"].forEach(id=>{
+    document.getElementById(id).style.display=id===showId?"":"none";
+  });
+}
+
+function populatePrefsUI(p){
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val; };
+  const chk = (id, val) => { const el=document.getElementById(id); if(el) el.checked=!!val; };
+  chk("pref-auto-naming",       p.auto_naming??true);
+  set("pref-auto-name-template",p.auto_name_template??"{source}");
+  chk("pref-mp4-extension",     p.mp4_extension??false);
+  set("pref-num-previews",      p.num_previews??10);
+  set("pref-min-duration",      p.min_title_duration??10);
+  chk("pref-max-duration-enabled", p.max_title_duration_enabled??false);
+  set("pref-max-duration",      p.max_title_duration??0);
+  chk("pref-keep-dupes",        p.keep_duplicate_titles??false);
+  chk("pref-same-settings-batch", p.same_settings_batch??true);
+  chk("pref-show-preview-summary", p.show_preview_summary??true);
+  renderExtList(p.excluded_extensions||[]);
+  chk("pref-pause-low-disk",    p.pause_on_low_disk??true);
+  set("pref-low-disk-gb",       p.low_disk_threshold_gb??10);
+  chk("pref-clear-completed",   p.clear_completed_on_encode??false);
+  chk("pref-pause-power-saver", p.pause_on_power_saver??true);
+  set("pref-when-done-default", p.when_done_default??"Do Nothing");
+  chk("pref-notify-queue-complete", p.notify_queue_complete??true);
+  chk("pref-notify-each-complete",  p.notify_each_complete??false);
+  set("pref-send-file-to",      p.send_file_to??"");
+  set("pref-cq-granularity",    p.cq_granularity??1);
+  chk("pref-use-dvdnav",        p.use_dvdnav??true);
+  chk("pref-logs-with-movie",   p.logs_with_movie??false);
+  set("pref-log-verbosity",     p.log_verbosity??1);
+  set("pref-log-longevity",     p.log_longevity??"Month");
+  chk("pref-scale-hd-previews", p.scale_hd_previews??true);
+  chk("pref-auto-scan-dvd",     p.auto_scan_dvd??false);
+  set("pref-activity-font-size",p.activity_font_size??8);
+  chk("pref-custom-temp-enabled", !!(p.temp_dir));
+  set("pref-temp-dir",          p.temp_dir??"");
+}
+
+function renderExtList(exts){
+  const el = document.getElementById("pref-ext-list");
+  if(!el) return;
+  el.innerHTML = exts.map((e,i)=>
+    `<div class="prefs-ext-item${i===selectedExtIndex?" selected":""}" onclick="selectExt(${i})">${esc(e)}</div>`
+  ).join("");
+}
+
+function selectExt(i){
+  selectedExtIndex = i;
+  const exts = currentPrefs?.excluded_extensions||[];
+  renderExtList(exts);
+}
+
+function prefsAddExt(){
+  const input = document.getElementById("pref-ext-input");
+  const val = (input.value||"").trim().replace(/^\./,"").toLowerCase();
+  if(!val) return;
+  if(!currentPrefs.excluded_extensions) currentPrefs.excluded_extensions=[];
+  if(!currentPrefs.excluded_extensions.includes(val)){
+    currentPrefs.excluded_extensions.push(val);
+    renderExtList(currentPrefs.excluded_extensions);
+  }
+  input.value="";
+}
+
+function prefsRemoveExt(){
+  if(!currentPrefs?.excluded_extensions||selectedExtIndex<0) return;
+  currentPrefs.excluded_extensions.splice(selectedExtIndex,1);
+  selectedExtIndex=-1;
+  renderExtList(currentPrefs.excluded_extensions);
+}
+
+async function savePrefs(){
+  const get = id => { const el=document.getElementById(id); return el?el.value:null; };
+  const chk = id => { const el=document.getElementById(id); return el?el.checked:false; };
+  const prefs = {
+    auto_naming:              chk("pref-auto-naming"),
+    auto_name_template:       get("pref-auto-name-template"),
+    mp4_extension:            chk("pref-mp4-extension"),
+    num_previews:             parseInt(get("pref-num-previews"))||10,
+    min_title_duration:       parseInt(get("pref-min-duration"))||10,
+    max_title_duration_enabled: chk("pref-max-duration-enabled"),
+    max_title_duration:       parseInt(get("pref-max-duration"))||0,
+    keep_duplicate_titles:    chk("pref-keep-dupes"),
+    same_settings_batch:      chk("pref-same-settings-batch"),
+    show_preview_summary:     chk("pref-show-preview-summary"),
+    excluded_extensions:      currentPrefs?.excluded_extensions||[],
+    pause_on_low_disk:        chk("pref-pause-low-disk"),
+    low_disk_threshold_gb:    parseInt(get("pref-low-disk-gb"))||10,
+    clear_completed_on_encode:chk("pref-clear-completed"),
+    pause_on_power_saver:     chk("pref-pause-power-saver"),
+    when_done_default:        get("pref-when-done-default"),
+    notify_queue_complete:    chk("pref-notify-queue-complete"),
+    notify_each_complete:     chk("pref-notify-each-complete"),
+    send_file_to:             get("pref-send-file-to"),
+    cq_granularity:           parseInt(get("pref-cq-granularity"))||1,
+    use_dvdnav:               chk("pref-use-dvdnav"),
+    logs_with_movie:          chk("pref-logs-with-movie"),
+    log_verbosity:            parseInt(get("pref-log-verbosity"))||1,
+    log_longevity:            get("pref-log-longevity"),
+    scale_hd_previews:        chk("pref-scale-hd-previews"),
+    auto_scan_dvd:            chk("pref-auto-scan-dvd"),
+    activity_font_size:       parseInt(get("pref-activity-font-size"))||8,
+    temp_dir:                 chk("pref-custom-temp-enabled") ? (get("pref-temp-dir")||"") : "",
+  };
+  try{
+    await fetch(SERVER+"/api/prefs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(prefs)});
+    currentPrefs = prefs;
+    // Apply activity font size live
+    const logEl = document.getElementById("activity-log");
+    if(logEl) logEl.style.fontSize = prefs.activity_font_size+"px";
+    // Apply show preview in summary live
+    const previewCol = document.getElementById("preview-col");
+    if(previewCol) previewCol.style.display = prefs.show_preview_summary===false ? "none" : "";
+    // Apply CQ granularity to RF slider
+    const rfSlider = document.getElementById("rf-slider");
+    if(rfSlider){
+      const step = [1, 0.5, 0.25][Math.min(2, Math.max(0, parseInt(prefs.cq_granularity)-1))] || 1;
+      rfSlider.step = step;
+    }
+    // Request notification permission if notifications enabled
+    if((prefs.notify_queue_complete||prefs.notify_each_complete) && "Notification" in window && Notification.permission==="default"){
+      Notification.requestPermission();
+    }
+    closePrefsPanel();
+  }catch(e){
+    hbAlert("Could not save preferences: "+e.message);
+  }
+}
+
+function renderPresetsList(){
+  const el=document.getElementById("presets-list");
+  if(!config.presets||!config.presets.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">No saved presets yet</div>';
+    return;
+  }
+  const byCategory={};
+  config.presets.forEach(p=>{ const c=p.category||"My Presets"; (byCategory[c]=byCategory[c]||[]).push(p); });
+  el.innerHTML=Object.entries(byCategory).map(([cat,presets])=>
+    `<div class="preset-category">${esc(cat)}</div>`+
+    presets.map(p=>`
+      <div class="preset-item" onclick="applyPreset('${esc(p.name)}')">
+        <span class="preset-name">${esc(p.name)}</span>
+        <div class="preset-actions">
+          <button class="btn-icon" onclick="event.stopPropagation();deletePreset('${esc(p.name)}')" title="Delete"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>`).join("")
+  ).join("");
+}
+
+function applyPresetByIndex(idx){
+  const p = config.presets[idx];
+  if(p) applyPreset(p.name);
+}
+
+function deletePresetByIndex(idx){
+  const p = config.presets[idx];
+  if(p) deletePreset(p.name);
+}
+
+function applyPreset(name){
+  const p=config.presets.find(x=>x.name===name);
+  if(!p){ console.warn("Preset not found:", name, "Available:", config.presets.map(x=>x.name)); return;}
+  currentPreset=p;
+  document.getElementById("preset-path-label").textContent=`Custom > ${p.category||"My Presets"} > ${p.name}`;
+  document.getElementById("preset-modified").style.display="none";
+  const s=p.settings||{};
+
+  // ── Video ──
+  const setVal = (id,v) => { const el=document.getElementById(id); if(el&&v!==undefined&&v!==null&&v!=="") el.value=v; };
+  const setChk = (id,v) => { const el=document.getElementById(id); if(el&&v!==undefined) el.checked=!!v; };
+  setVal("video-encoder", s.video_encoder);
+  if(s.rf!==undefined){ document.getElementById("rf-slider").value=s.rf; document.getElementById("rf-val").textContent=Math.round(s.rf); }
+  if(s.encoder_preset){ const idx=ENC_PRESETS.indexOf(s.encoder_preset); document.getElementById("enc-preset-slider").value=idx>=0?idx:6; updatePresetLabel(); }
+  setVal("tune", s.tune);
+  setVal("profile", s.profile);
+  setVal("level", s.level);
+  setVal("framerate", s.framerate);
+  setVal("color-range", s.color_range);
+  setVal("additional-options", s.additional_options);
+  if(s.quality_mode){ document.querySelectorAll('input[name="q-mode"]').forEach(r=>r.checked=(r.value===s.quality_mode)); toggleQualityMode(); }
+  if(s.bitrate) setVal("bitrate-val", s.bitrate);
+  setChk("two-pass", s.two_pass);
+  setChk("turbo-pass", s.turbo_pass);
+  if(s.framerate_mode){ document.querySelectorAll('input[name="fr-mode"]').forEach(r=>r.checked=(r.value===s.framerate_mode)); }
+
+  // ── Dimensions ──
+  setVal("resolution-limit", s.resolution_limit);
+  setVal("anamorphic", s.anamorphic);
+  setVal("cropping", s.cropping); toggleCropInputs();
+  if(s.crop_top!==undefined) setVal("crop-top", s.crop_top);
+  if(s.crop_bottom!==undefined) setVal("crop-bottom", s.crop_bottom);
+  if(s.crop_left!==undefined) setVal("crop-left", s.crop_left);
+  if(s.crop_right!==undefined) setVal("crop-right", s.crop_right);
+  setChk("allow-upscaling", s.allow_upscaling);
+  setChk("flip-h", s.flip_horizontal);
+
+  // ── Filters ──
+  setVal("detelecine", s.detelecine);
+  setVal("interlace-detection", s.interlace_detection);
+  setVal("deinterlace", s.deinterlace); toggleDeinterlacePreset();
+  setVal("deinterlace-preset", s.deinterlace_preset);
+  setVal("deblock", s.deblock);
+  setVal("denoise", s.denoise); toggleDenoisePreset();
+  setVal("denoise-preset", s.denoise_preset);
+  setVal("chroma-smooth", s.chroma_smooth);
+  setVal("sharpen", s.sharpen); toggleSharpenPreset();
+  setVal("sharpen-preset", s.sharpen_preset);
+  setVal("colorspace", s.colorspace);
+  setChk("grayscale", s.grayscale);
+
+  // ── Output ──
+  setVal("container", s.container);
+  setChk("passthru-metadata", s.passthru_metadata);
+  setChk("chapter-markers", s.chapter_markers);
+
+  // ── Audio selection behavior ──
+  if(s.audio_language_list && s.audio_language_list.length){
+    // Move selected languages from available to selected list
+    const langNames = s.audio_language_list.map(code => _langCodeToName(code));
+    audSelLangs = langNames.filter(l => l);
+    audAvailLangs = ALL_LANGUAGES.filter(l => !audSelLangs.includes(l));
+    renderLangList("aud-avail-langs", audAvailLangs, "aud", "avail");
+    renderLangList("aud-sel-langs",   audSelLangs,   "aud", "sel");
+  }
+  setVal("aud-sel-behavior", s.audio_sel_behavior);
+  setVal("pt-fallback", s.audio_fallback);
+  setChk("pt-track-names", s.audio_name_passthru);
+  setChk("aud-first-encoder-only", s.audio_secondary_encoder);
+  setVal("aud-autonaming", s.audio_autonaming);
+  if(s.passthru_enabled){
+    const allPt=["pt-mp2","pt-mp3","pt-ac3","pt-eac3","pt-dts","pt-dtshd","pt-truehd","pt-alac","pt-flac","pt-aac","pt-vorbis","pt-opus","pt-pcm"];
+    allPt.forEach(id=>{ const el=document.getElementById(id); if(el) el.checked=!!s.passthru_enabled[id]; });
+  }
+  if(s.default_audio_encoder) setVal("aud-default-encoder", s.default_audio_encoder);
+  if(s.default_audio_bitrate) setVal("aud-default-bitrate", s.default_audio_bitrate);
+  if(s.default_audio_mixdown) setVal("aud-default-mixdown", s.default_audio_mixdown);
+
+  // ── Subtitle selection behavior ──
+  if(s.sub_language_list && s.sub_language_list.length){
+    const langNames = s.sub_language_list.map(code => _langCodeToName(code));
+    subSelLangs = langNames.filter(l => l);
+    subAvailLangs = ALL_LANGUAGES.filter(l => !subSelLangs.includes(l));
+    renderLangList("sub-avail-langs", subAvailLangs, "sub", "avail");
+    renderLangList("sub-sel-langs",   subSelLangs,   "sub", "sel");
+  }
+  setVal("sub-sel-behavior", s.sub_sel_behavior);
+  setVal("sub-burnin-behavior", s.sub_burn_behavior);
+  setChk("sub-burnin-dvd", s.sub_burn_dvd);
+  setChk("sub-burnin-bluray", s.sub_burn_bluray);
+  setChk("sub-foreign-scan", s.sub_foreign_scan);
+  setChk("sub-add-if-not-matching", s.sub_add_if_not_match);
+  setChk("sub-closed-captions", s.sub_closed_captions);
+  setChk("sub-pt-names", s.sub_name_passthru);
+
+  closePresets();
+  renderSummary();
+  saveSession();
+}
+
+// Language code to display name mapping
+function _langCodeToName(code){
+  const map={
+    "eng":"English","jpn":"Japanese","fre":"French","fra":"French",
+    "ger":"German","deu":"German","spa":"Spanish","ita":"Italian",
+    "por":"Portuguese","rus":"Russian","chi":"Chinese","zho":"Chinese",
+    "kor":"Korean","ara":"Arabic","hin":"Hindi","und":"Unknown",
+    "any":"Any","nld":"Dutch","pol":"Polish","swe":"Swedish",
+    "nor":"Norwegian","dan":"Danish","fin":"Finnish","tur":"Turkish",
+    "heb":"Hebrew","tha":"Thai","vie":"Vietnamese","cze":"Czech",
+    "ces":"Czech","hun":"Hungarian","rum":"Romanian","ron":"Romanian",
+    "ukr":"Ukrainian","cat":"Catalan","hrv":"Croatian","slv":"Slovenian",
+  };
+  return map[code] || code;
+}
+
+function deletePreset(name){
+  config.presets=config.presets.filter(p=>p.name!==name);
+  saveConfigToServer();
+  renderPresetsList();
+}
+
+function saveNewPreset(){
+  document.getElementById("new-preset-name").value="";
+  openModal("save-preset-modal");
+}
+
+function reloadPreset(){
+  if(currentPreset) applyPreset(currentPreset.name);
+}
+
+function confirmSavePreset(){
+  const name=document.getElementById("new-preset-name").value.trim();
+  const cat=document.getElementById("new-preset-cat").value.trim()||"My Presets";
+  if(!name){hbAlert("Enter a name");return;}
+  const settings=collectSettings();
+  config.presets=config.presets.filter(p=>p.name!==name);
+  config.presets.push({name,category:cat,settings});
+  saveConfigToServer();
+  document.getElementById("preset-path").textContent=`Custom > ${cat} > ${name}`;
+  closeModal("save-preset-modal");
+  renderPresetsList();
+}
+
+// ── Collect all settings ───────────────────────────────────────────────────
+function collectSettings(){
+  return {
+    video_encoder: document.getElementById("video-encoder").value,
+    rf: parseInt(document.getElementById("rf-slider").value),
+    encoder_preset: ENC_PRESETS[parseInt(document.getElementById("enc-preset-slider").value)],
+    quality_mode: document.querySelector('input[name="q-mode"]:checked')?.value||"cq",
+    bitrate: parseInt(document.getElementById("bitrate-val").value)||0,
+    multi_pass: document.getElementById("multi-pass").checked,
+    turbo_pass: document.getElementById("turbo-pass").checked,
+    framerate: document.getElementById("framerate").value,
+    framerate_mode: document.querySelector('input[name="fr-mode"]:checked')?.value||"cfr",
+    color_range: document.getElementById("color-range").value,
+    tune: document.getElementById("tune").value,
+    profile: document.getElementById("profile").value,
+    level: document.getElementById("level").value,
+    additional_options: document.getElementById("additional-options").value,
+    resolution_limit: document.getElementById("resolution-limit").value,
+    anamorphic: document.getElementById("anamorphic").value,
+    cropping: document.getElementById("cropping").value,
+    crop_top: parseInt(document.getElementById("crop-top").value)||0,
+    crop_bottom: parseInt(document.getElementById("crop-bottom").value)||0,
+    crop_left: parseInt(document.getElementById("crop-left").value)||0,
+    crop_right: parseInt(document.getElementById("crop-right").value)||0,
+    flip_horizontal: document.getElementById("flip-h").checked,
+    rotation: document.getElementById("rotation").value,
+    allow_upscaling: document.getElementById("allow-upscaling").checked,
+    custom_width: parseInt(document.getElementById("custom-width").value)||0,
+    custom_height: parseInt(document.getElementById("custom-height").value)||0,
+    detelecine: document.getElementById("detelecine").value,
+    interlace_detection: document.getElementById("interlace-detection").value,
+    deinterlace: document.getElementById("deinterlace").value,
+    deinterlace_preset: document.getElementById("deinterlace-preset").value,
+    deblock: document.getElementById("deblock").value,
+    denoise: document.getElementById("denoise").value,
+    denoise_preset: document.getElementById("denoise-preset").value,
+    chroma_smooth: document.getElementById("chroma-smooth").value,
+    sharpen: document.getElementById("sharpen").value,
+    sharpen_preset: document.getElementById("sharpen-preset").value,
+    colorspace: document.getElementById("colorspace").value,
+    grayscale: document.getElementById("grayscale").checked,
+    chapter_markers: document.getElementById("chapter-markers").checked,
+    container: "mkv",
+    preset_name: document.getElementById("preset-path").textContent,
+  };
+}
+
+// ── Add to Queue / Start ───────────────────────────────────────────────────
+async function addToQueue(){
+  if(!sourceFile){hbAlert("Open a source file first");return;}
+  const settings=collectSettings();
+  // Ensure sourceInfo is populated — fetch if missing (e.g. after page reload)
+  if(!sourceInfo && sourceFile){
+    try{
+      const r = await fetch(SERVER+"/api/tracks?path="+encodeURIComponent(sourceFile));
+      sourceInfo = await r.json();
+      activeAudioTracks = sourceInfo.audio.map(t=>({...t,encoder:"copy",mixdown:"none",bitrate:320,samplerate:0,gain:0,name:t.title||""}));
+      activeSubTracks = sourceInfo.subtitles.map(t=>({...t,custom_name:t.title||"",burn_in:false}));
+    }catch{
+      sourceInfo = {audio:[],subtitles:[],chapters:[],video:{}};
+    }
+  }
+  // If no audio tracks manually configured, auto-include all from source as copy
+  const audioTracks = activeAudioTracks.length > 0
+    ? activeAudioTracks
+    : (sourceInfo?.audio||[]).map(t=>({...t,encoder:"copy",mixdown:"none",bitrate:320,samplerate:0,gain:0,name:t.title||""}));
+  const subTracks = activeSubTracks.length > 0
+    ? activeSubTracks
+    : (sourceInfo?.subtitles||[]).map(t=>({...t,custom_name:t.title||"",burn_in:false}));
+  const params={
+    ...settings,
+    input_file: sourceFile,
+    save_as: document.getElementById("save-as-footer").value,
+    audio_tracks: audioTracks,
+    subtitle_tracks: subTracks,
+    tag_title: document.getElementById("tag-title").value,
+    tag_comment: document.getElementById("tag-comment").value,
+    tag_genre: document.getElementById("tag-genre").value,
+    tag_description: document.getElementById("tag-description").value,
+    chapter_start: document.getElementById("range-start").value,
+    chapter_end: document.getElementById("range-end").value,
+  };
+  try{
+    params.auto_start = false;
+    const r=await fetch(SERVER+"/api/encode",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(params)});
+    const data=await r.json();
+    if(data.job_id){
+      saveSession();
+      pollJobs();
+      updateQueueBadge();
+    }else{
+      hbAlert("Error: "+(data.error||"Unknown"));
+    }
+  }catch(e){
+    hbAlert("Cannot reach server: "+e.message);
+  }
+}
+
+async function startQueuedJobs(){
+  // Only starts jobs already in the queue - does NOT add new ones
+  await pollJobs();
+  const queued = jobs.filter(j=>j.status==="queued");
+  if(queued.length === 0){ return; } // Nothing to start
+  for(const job of queued){
+    try{ await fetch(SERVER+"/api/jobs/"+job.id+"/start",{method:"POST"}); }catch{}
+  }
+  pollJobs();
+}
+
+async function startQueue(){
+  await pollJobs(); // Make sure jobs list is current
+  const queued = jobs.filter(j=>j.status==="queued");
+  const encoding = jobs.filter(j=>j.status==="encoding");
+
+  if(encoding.length > 0){
+    // Already encoding - do nothing
+    return;
+  }
+
+  if(queued.length > 0){
+    // Start all queued jobs
+    for(const job of queued){
+      try{ await fetch(SERVER+"/api/jobs/"+job.id+"/start",{method:"POST"}); }catch{}
+    }
+    pollJobs();
+    return;
+  }
+
+  // Nothing queued - add current file and start
+  if(!sourceFile){ hbAlert("Open a source file first."); return; }
+  const settings = collectSettings();
+  const params = {
+    ...settings,
+    input_file: sourceFile,
+    save_as: document.getElementById("save-as-footer")?.value || "",
+    audio_tracks: activeAudioTracks,
+    subtitle_tracks: activeSubTracks,
+    tag_title: document.getElementById("tag-title")?.value || "",
+    tag_comment: document.getElementById("tag-comment")?.value || "",
+    tag_genre: document.getElementById("tag-genre")?.value || "",
+    tag_description: document.getElementById("tag-description")?.value || "",
+    chapter_start: document.getElementById("range-start")?.value || "1",
+    chapter_end: document.getElementById("range-end")?.value || "1",
+    auto_start: true,
+  };
+  try{
+    const r = await fetch(SERVER+"/api/encode",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(params)});
+    const data = await r.json();
+    if(data.error) hbAlert("Error: "+data.error);
+    else{ saveSession(); pollJobs(); }
+  }catch(e){ hbAlert("Cannot reach server: "+e.message); }
+}
+async function pauseQueue(){
+  const encoding = jobs.find(j=>j.status==="encoding");
+  if(encoding){
+    try{
+      await fetch(SERVER+"/api/jobs/"+encoding.id+"/pause",{method:"POST"});
+      pollJobs();
+    }catch(e){ hbAlert("Cannot reach server"); }
+  }
+}
+
+async function resumeQueue(){
+  const paused = jobs.find(j=>j.status==="paused");
+  if(paused){
+    try{
+      await fetch(SERVER+"/api/jobs/"+paused.id+"/resume",{method:"POST"});
+      pollJobs();
+    }catch(e){ hbAlert("Cannot reach server"); }
+  }
+}
+
+async function togglePauseResume(){
+  const encoding = jobs.find(j=>j.status==="encoding");
+  const paused   = jobs.find(j=>j.status==="paused");
+  if(encoding)    await pauseQueue();
+  else if(paused) await resumeQueue();
+}
+
+
+// ── Queue ──────────────────────────────────────────────────────────────────
+function toggleQueueMenu(e){
+  e.stopPropagation();
+  const m = document.getElementById("queue-dot-menu");
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  m.style.top = rect.bottom + "px";
+  m.style.right = (window.innerWidth - rect.right) + "px";
+  m.style.left = "auto";
+  m.classList.toggle("open");
+  if(m.classList.contains("open")){
+    setTimeout(()=>document.addEventListener("click", closeQueueMenu, {once:true}), 0);
+  }
+}
+function closeQueueMenu(){ document.getElementById("queue-dot-menu").classList.remove("open"); }
+
+async function queueAction(action){
+  closeQueueMenu();
+  if(action==="resetFailed"){
+    const failed = jobs.filter(j=>j.status==="error"||j.status==="cancelled");
+    for(const j of failed) await fetch(SERVER+"/api/jobs/"+j.id+"/reset",{method:"POST"});
+    pollJobs();
+  } else if(action==="resetAll"){
+    if(!await hbConfirm("Reset all jobs to queued?")) return;
+    for(const j of jobs){
+      if(j.status==="encoding"||j.status==="paused"){
+        await fetch(SERVER+"/api/jobs/"+j.id+"/cancel",{method:"POST"});
+      }
+      await fetch(SERVER+"/api/jobs/"+j.id+"/reset",{method:"POST"});
+    }
+    selectedJobId=null; pollJobs();
+  } else if(action==="clearCompleted"){
+    const done = jobs.filter(j=>j.status==="done");
+    for(const j of done) await fetch(SERVER+"/api/jobs/"+j.id,{method:"DELETE"});
+    pollJobs();
+  } else if(action==="clearAll"){
+    if(!await hbConfirm("Clear all jobs from queue?")) return;
+    for(const j of jobs) await fetch(SERVER+"/api/jobs/"+j.id,{method:"DELETE"});
+    selectedJobId=null; pollJobs();
+  } else if(action==="export"){
+    const data = JSON.stringify(jobs.map(j=>j.params||{}), null, 2);
+    const a = document.createElement("a");
+    a.href = "data:application/json;charset=utf-8,"+encodeURIComponent(data);
+    a.download = "handbrake-queue.json";
+    a.click();
+  } else if(action==="import"){
+    const input = document.createElement("input");
+    input.type="file"; input.accept=".json";
+    input.onchange = async e => {
+      try{
+        const text = await e.target.files[0].text();
+        const items = JSON.parse(text);
+        const list = Array.isArray(items) ? items : [items];
+        for(const params of list){
+          if(!params.input_file) continue;
+          params.auto_start = false;
+          await fetch(SERVER+"/api/encode",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(params)});
+        }
+        pollJobs();
+      }catch(err){ hbAlert("Import failed: "+err.message); }
+    };
+    input.click();
+  }
+}
+function openQueue(){
+  document.getElementById("queue-panel").classList.add("open");
+  // Always reset to Summary tab on open
+  const actEl = document.getElementById("qtab-activity");
+  if(actEl){ actEl.style.display="none"; actEl.style.flex=""; actEl.style.flexDirection=""; actEl.style.minHeight=""; actEl.style.overflow=""; }
+  const sumEl = document.getElementById("qtab-summary");
+  if(sumEl) sumEl.style.display="";
+  const statEl = document.getElementById("qtab-statistics");
+  if(statEl) statEl.style.display="none";
+  document.querySelectorAll("#queue-right-tabs .q-detail-tab").forEach((t,i)=>{ t.classList.toggle("active", i===0); });
+  stopQueueActivityPoll();
+  renderQueueList();
+}
+function closeQueue(){ document.getElementById("queue-panel").classList.remove("open"); stopQueueActivityPoll(); }
+
+function updateQueueBadge(){
+  const badge = document.getElementById("queue-badge");
+  if(!badge) return;
+  const count = jobs.filter(j=>j.status==="queued"||j.status==="encoding"||j.status==="paused").length;
+  if(count>0){ badge.textContent=count; badge.style.display=""; }
+  else{ badge.style.display="none"; }
+}
+
+function switchQueueTab(btn, showId){
+  document.querySelectorAll("#queue-right-tabs .q-detail-tab").forEach(t=>t.classList.remove("active"));
+  btn.classList.add("active");
+  ["qtab-summary","qtab-statistics","qtab-activity"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    if(id===showId){
+      if(id==="qtab-activity"){
+        el.style.display="flex";
+        el.style.flexDirection="column";
+        el.style.flex="1";
+        el.style.minHeight="0";
+        el.style.overflow="hidden";
+      } else {
+        el.style.display="";
+      }
+    } else {
+      el.style.display="none";
+      if(id==="qtab-activity"){
+        el.style.flex="";
+      }
+    }
+  });
+  if(showId!=="qtab-activity") stopQueueActivityPoll();
+}
+
+let queueActivityTimer=null;
+function startQueueActivityPoll(){
+  pollQueueActivity();
+  if(!queueActivityTimer) queueActivityTimer=setInterval(pollQueueActivity,2000);
+}
+function stopQueueActivityPoll(){
+  if(queueActivityTimer){ clearInterval(queueActivityTimer); queueActivityTimer=null; }
+}
+async function pollQueueActivity(){
+  const wrapper=document.getElementById("qtab-activity");
+  if(!wrapper||wrapper.style.display==="none"||wrapper.style.display==="") return;
+  const fileEl=document.getElementById("qtab-activity-file");
+  const logEl=document.getElementById("qtab-activity-log");
+  if(!logEl) return;
+  const active=jobs.find(j=>j.status==="encoding")||jobs.find(j=>j.status==="paused")||jobs[0];
+  if(!active){
+    if(fileEl) fileEl.textContent="No active job";
+    logEl.textContent="Waiting for encode to start...";
+    return;
+  }
+  try{
+    const r=await fetch(SERVER+"/api/jobs/"+active.id+"/log");
+    const data=await r.json();
+    const log=(data.log||[]).join("\n");
+    if(fileEl) fileEl.textContent=active.input_file||active.filename||active.id;
+    const atBottom=logEl.scrollHeight-logEl.scrollTop-logEl.clientHeight<60;
+    logEl.textContent=log||"(no output yet)";
+    if(atBottom) logEl.scrollTop=logEl.scrollHeight;
+  }catch{}
+}
+let activityPollTimer = null;
+
+function openActivity(){
+  document.getElementById("activity-panel").classList.add("open");
+  pollActivityLog();
+  activityPollTimer = setInterval(pollActivityLog, 2000);
+}
+
+function closeActivity(){
+  document.getElementById("activity-panel").classList.remove("open");
+  if(activityPollTimer){ clearInterval(activityPollTimer); activityPollTimer=null; }
+}
+
+async function pollActivityLog(){
+  // Find the most relevant job: encoding > paused > most recent done/error
+  const active = jobs.find(j=>j.status==="encoding") || jobs.find(j=>j.status==="paused") || jobs[0];
+  const fileEl = document.getElementById("activity-file");
+  const logEl  = document.getElementById("activity-log");
+  if(!active){ fileEl.textContent="No active job"; logEl.textContent="Waiting for encode to start..."; return; }
+  try{
+    const r = await fetch(SERVER+"/api/jobs/"+active.id+"/log");
+    const data = await r.json();
+    const log = (data.log||[]).join("\n");
+    fileEl.textContent = active.input_file || active.filename || active.id;
+    // Only scroll to bottom if already near bottom
+    const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 60;
+    logEl.textContent = log || "(no output yet)";
+    if(atBottom) logEl.scrollTop = logEl.scrollHeight;
+  }catch{}
+}
+
+let _prevJobStates = {};
+async function pollJobs(){
+  try{
+    const r = await fetch(SERVER+"/api/jobs");
+    const newJobs = await r.json();
+    // Check for newly completed jobs for notifications
+    if(currentPrefs?.notify_each_complete || currentPrefs?.notify_queue_complete){
+      const wasEncoding = Object.values(_prevJobStates).some(s=>s==="encoding");
+      newJobs.forEach(j=>{
+        const prev = _prevJobStates[j.id];
+        if(prev==="encoding" && j.status==="done" && currentPrefs?.notify_each_complete){
+          sendNotification("Encode Complete", j.filename||j.id);
+        }
+      });
+      const nowEncoding = newJobs.some(j=>j.status==="encoding");
+      const allDone = newJobs.length>0 && newJobs.every(j=>["done","error","cancelled"].includes(j.status));
+      if(wasEncoding && !nowEncoding && allDone && currentPrefs?.notify_queue_complete){
+        sendNotification("Queue Complete", "All encodes have finished.");
+      }
+    }
+    _prevJobStates = {};
+    newJobs.forEach(j=>{ _prevJobStates[j.id]=j.status; });
+    jobs = newJobs;
+    renderQueueList();
+    updateStartStopBtn();
+    updateStatusBar();
+    updateQueueBadge();
+  }catch{}
+}
+
+function sendNotification(title, body){
+  if(!("Notification" in window)) return;
+  if(Notification.permission==="granted"){
+    new Notification(title, {body, icon:"/static/icon.png"});
+  } else if(Notification.permission!=="denied"){
+    Notification.requestPermission().then(p=>{ if(p==="granted") new Notification(title, {body}); });
+  }
+}
+
+function renderQueueList(){
+  const list=document.getElementById("queue-list");
+  const pending=jobs.filter(j=>j.status==="queued"||j.status==="encoding").length;
+  document.getElementById("queue-subtitle").textContent=`${pending} encode${pending!==1?"s":""} pending`;
+  if(!jobs.length){
+    list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Queue is empty</div>';
+    return;
+  }
+  list.innerHTML="";
+  jobs.forEach(job=>{
+    const el=document.createElement("div");
+    el.className="queue-item"+(selectedJobId===job.id?" selected":"");
+    const icons={queued:"ti-clock muted",encoding:"ti-loader accent spin",paused:"ti-player-pause yellow",done:"ti-circle-check green",error:"ti-alert-triangle red",cancelled:"ti-ban muted"};
+    const removeBtn = (job.status==="encoding"||job.status==="paused")
+      ? `<button class="btn-icon" style="flex-shrink:0;color:var(--red);border-color:#c62828" onclick="event.stopPropagation();cancelJob('${job.id}')" title="Cancel"><i class="ti ti-x"></i></button>`
+      : job.status==="queued"
+      ? `<button class="btn-icon" style="flex-shrink:0;color:var(--red);border-color:#c62828" onclick="event.stopPropagation();deleteJob('${job.id}')" title="Remove"><i class="ti ti-x"></i></button>`
+      : `<button class="btn-icon" style="flex-shrink:0;color:var(--text3)" onclick="event.stopPropagation();deleteJob('${job.id}')" title="Remove"><i class="ti ti-x"></i></button>`;
+    el.innerHTML=`
+      <i class="ti ${icons[job.status]||"ti-clock"} q-status-icon"></i>
+      <div class="q-item-info">
+        <div class="q-item-name">${esc(job.filename||job.id)}</div>
+        <div class="q-item-meta">${job.status==="encoding"?job.progress+"% "+(job.eta?"· ETA "+job.eta:""):job.status==="paused"?"Paused — "+job.progress+"%":job.status}</div>
+        ${job.status==="encoding"?`<div class="q-progress-bar"><div class="q-progress-fill" style="width:${job.progress}%"></div></div>`:""}
+      </div>
+      ${removeBtn}`;
+    el.onclick=()=>{ selectedJobId=job.id; renderQueueList(); showJobDetail(job); };
+    list.appendChild(el);
+  });
+}
+
+function showJobDetail(job){
+  const el=document.getElementById("qtab-summary");
+  const p=job.params||{};
+
+  // Action buttons depending on status
+
+
+  // Video summary line
+  const encNames={h265:"H.265 (x265)",h265_10bit:"H.265 10-bit (x265)",h264:"H.264 (x264)",h264_10bit:"H.264 10-bit",av1:"AV1 (SVT)",av1_10bit:"AV1 10-bit",vp9:"VP9",h265_nvenc:"H.265 (NVENC)",h264_nvenc:"H.264 (NVENC)",h265_qsv:"H.265 (QSV)",h264_qsv:"H.264 (QSV)"};
+  const encLabel=encNames[p.video_encoder]||p.video_encoder||"H.265";
+  const qualStr=p.quality_mode==="cq"?`Constant Quality ${p.rf||22}(RF)`:`Avg Bitrate ${p.bitrate||0}kbps`;
+  const presetStr=p.encoder_preset?`, Preset ${p.encoder_preset}`:"";
+  const tuneStr=p.tune&&p.tune!=="none"?`, Tune ${p.tune}`:"";
+  const profileStr=p.profile&&p.profile!=="auto"?`, Profile ${p.profile}`:"";
+  const levelStr=p.level&&p.level!=="auto"?`, Level ${p.level}`:"";
+  const fpsStr=p.framerate&&p.framerate!=="same"?`${p.framerate} fps`:"Same as source fps";
+  const frModeStr=p.framerate_mode==="cfr"?"Constant Framerate":p.framerate_mode==="vfr"?"Variable Framerate":"Peak Framerate";
+
+  // Filters line
+  const filterParts=[];
+  if(p.interlace_detection&&p.interlace_detection!=="off") filterParts.push("Comb Detect");
+  if(p.deinterlace&&p.deinterlace!=="off") filterParts.push(p.deinterlace==="decomb"?"Decomb":"Deinterlace (Yadif)");
+  if(p.detelecine&&p.detelecine!=="off") filterParts.push("Detelecine");
+  if(p.denoise&&p.denoise!=="off") filterParts.push(p.denoise==="nlmeans"?"NLMeans":"HQDN3D");
+  if(p.sharpen&&p.sharpen!=="off") filterParts.push(p.sharpen==="lapsharp"?"LapSharp":"Unsharp");
+  if(p.deblock&&p.deblock!=="off") filterParts.push("Deblock");
+  if(p.chroma_smooth&&p.chroma_smooth!=="off") filterParts.push("Chroma Smooth");
+  if(p.grayscale) filterParts.push("Grayscale");
+
+  // Dimensions
+  const resStr=p.resolution_limit?`Resolution limit: ${p.resolution_limit}`:"";
+  const cropStr=p.cropping&&p.cropping!=="none"?p.cropping==="custom"?`Custom crop ${p.crop_top||0}:${p.crop_bottom||0}:${p.crop_left||0}:${p.crop_right||0}`:"Auto crop":"No crop";
+  const anamStr=p.anamorphic?`${p.anamorphic} anamorphic`:"";
+
+  // Audio tracks
+  const audioTracks=p.audio_tracks||[];
+  const audioLines=audioTracks.length
+    ?audioTracks.map(t=>{
+        const lang=t.language&&t.language!=="und"?t.language.toUpperCase():(t.title||`Track ${t.track||"?"}`);
+        const codec=t.codec?` (${t.codec.toUpperCase()})`:"";
+        const mix=t.mixdown&&t.mixdown!=="none"?t.mixdown.charAt(0).toUpperCase()+t.mixdown.slice(1):"Stereo";
+        const enc=!t.encoder||t.encoder==="copy"?"Passthru":`${t.encoder.replace("av_","").replace("copy:","").toUpperCase()} Passthru`;
+        return `${mix}${codec} - ${lang}, ${enc}`;
+      }).join("<br>")
+    :"No audio tracks added";
+
+  // Subtitle tracks
+  const subTracks=p.subtitle_tracks||[];
+  const subLines=subTracks.length
+    ?subTracks.map(t=>{
+        const lang=t.language&&t.language!=="und"?t.language.toUpperCase():"";
+        const codec=t.codec?` (${t.codec.toUpperCase()})`:"";
+        const flags=[t.forced?"Forced":"",t.burn_in?"Burn-in":"",t.default?"Default":""].filter(Boolean).join(", ");
+        return `${lang}${codec}${flags?" — "+flags:""}`;
+      }).join("<br>")
+    :"None";
+
+  // Destination
+  const dest=p.save_as||(job.save_as?`${job.save_as}`:"");
+  const container=(p.container||"mkv").toUpperCase();
+  const destDisplay=dest?`/output/${dest}`:"/output/"+esc(job.filename||"");
+
+  // Progress row (only when encoding/paused)
+  const progressRow=job.status==="encoding"||job.status==="paused"
+    ?`<div class="q-detail-row"><span class="q-detail-key">Progress:</span><span class="q-detail-val">${job.progress||0}%${job.eta?" · ETA "+job.eta:""}</span></div>`:""
+
+  // Update statistics tab too
+  const statsEl=document.getElementById("qtab-statistics");
+  if(statsEl){
+    const fmtTime = ts => ts ? new Date(ts*1000).toDateString()+' '+new Date(ts*1000).toLocaleTimeString() : "—";
+    const fmtDur = secs => {
+      if(!secs) return "00:00:00";
+      const h=Math.floor(secs/3600), m=Math.floor((secs%3600)/60), s=Math.floor(secs%60);
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    };
+    const now = Date.now()/1000;
+    const encodeTime = job.started_at && job.status==="done" && job.ended_at
+      ? job.ended_at - job.started_at
+      : job.started_at ? now - job.started_at : 0;
+    const statusLabel = job.status==="done"?"Completed":job.status==="error"?"Failed":job.status==="encoding"?"Encoding":job.status==="paused"?"Paused":job.status==="queued"?"Pending":"—";
+    statsEl.innerHTML=`<div class="q-detail-body">
+      <div class="q-detail-row"><span class="q-detail-key">Start Time:</span><span class="q-detail-val">${fmtTime(job.started_at)}</span></div>
+      <div class="q-detail-row"><span class="q-detail-key">End Time:</span><span class="q-detail-val">${fmtTime(job.ended_at)}</span></div>
+      <div class="q-detail-row"><span class="q-detail-key">Paused Duration:</span><span class="q-detail-val">${fmtDur(job.paused_duration||0)}</span></div>
+      <div class="q-detail-row"><span class="q-detail-key">Encode Time:</span><span class="q-detail-val">${fmtDur(encodeTime)}</span></div>
+      <div class="q-detail-row"><span class="q-detail-key">File Size:</span><span class="q-detail-val">${job.output_size?((job.output_size/1024/1024).toFixed(2)+" MB"):"—"}</span></div>
+      <div class="q-detail-row"><span class="q-detail-key">Status:</span><span class="q-detail-val">${statusLabel}</span></div>
+    </div>`;
+  }
+  el.innerHTML=`
+      <div class="q-detail-actions">
+        <button class="btn-sm">Reset</button>
+        <button class="btn-sm">Edit</button>
+      </div>
+      <div class="q-detail-body">
+        ${progressRow}
+        ${job.error?`<div class="q-detail-row"><span class="q-detail-key" style="color:var(--red)">Error:</span><span class="q-detail-val" style="color:var(--red)">${esc(job.error)}</span></div>`:""}
+        <div class="q-detail-row"><span class="q-detail-key">Preset:</span><span class="q-detail-val">${esc(job.preset||"Custom")}</span></div>
+        <div class="q-detail-row"><span class="q-detail-key">Source:</span><span class="q-detail-val">${esc(job.input_file||"")}</span></div>
+        <div class="q-detail-row"><span class="q-detail-key">Destination:</span><span class="q-detail-val">${esc(destDisplay)}<br>${container} (avformat)${p.chapter_markers!==false?"<br>Chapter Markers":""}</span></div>
+        <div class="q-detail-row"><span class="q-detail-key">Dimensions:</span><span class="q-detail-val">${cropStr}<br>${resStr?resStr+"<br>":""}${anamStr}</span></div>
+        <div class="q-detail-row"><span class="q-detail-key">Video:</span><span class="q-detail-val">${encLabel}, ${qualStr}<br>Preset${presetStr}${tuneStr}${profileStr}${levelStr}<br>${frModeStr} ${fpsStr}${filterParts.length?"<br>"+filterParts.join(", "):""}</span></div>
+        <div class="q-detail-row"><span class="q-detail-key">Audio:</span><span class="q-detail-val">${audioLines}</span></div>
+        <div class="q-detail-row"><span class="q-detail-key">Subtitles:</span><span class="q-detail-val">${subLines}</span></div>
+      </div>
+`;
+}
+
+async function cancelJob(id){
+  await fetch(SERVER+"/api/jobs/"+id+"/cancel",{method:"POST"});
+  pollJobs();
+}
+async function deleteJob(id){
+  await fetch(SERVER+"/api/jobs/"+id,{method:"DELETE"});
+  selectedJobId=null;
+  pollJobs();
+  const qs=document.getElementById("qtab-summary"); if(qs) qs.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3)">Select a job to view details</div>';
+}
+
+// ── Locations ──────────────────────────────────────────────────────────────
+function addLocation(){ openModal("add-location-modal"); }
+async function confirmAddLocation(){
+  const name=document.getElementById("new-loc-name").value.trim();
+  const path=document.getElementById("new-loc-path").value.trim();
+  if(!name||!path){hbAlert("Enter both name and path");return;}
+  config.locations.push({name,path});
+  await saveConfigToServer();
+  closeModal("add-location-modal");
+  renderSidebar();
+}
+
+// ── Modals ─────────────────────────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add("open"); }
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function fmtSize(b){
+  if(!b)return"";
+  if(b>1e9)return(b/1e9).toFixed(1)+" GB";
+  if(b>1e6)return(b/1e6).toFixed(0)+" MB";
+  return(b/1e3).toFixed(0)+" KB";
+}
+function formatSize(b){ return fmtSize(b); }
+
+
+
+// ── Languages list ────────────────────────────────────────────────────────
+const ALL_LANGUAGES = ["Any","Unknown","Afrikaans","Albanian","Arabic","Basque","Bengali","Bulgarian",
+  "Catalan","Chinese","Croatian","Czech","Danish","Dutch","English","Estonian","Farsi","Finnish",
+  "French","Galician","German","Greek","Hebrew","Hindi","Hungarian","Icelandic","Indonesian",
+  "Irish","Italian","Japanese","Kannada","Korean","Latvian","Lithuanian","Macedonian","Malay",
+  "Malayalam","Maltese","Norwegian","Polish","Portuguese","Punjabi","Romanian","Russian","Serbian",
+  "Slovak","Slovenian","Spanish","Swedish","Tamil","Telugu","Thai","Turkish","Ukrainian","Urdu",
+  "Vietnamese","Welsh"];
+
+let audAvailLangs = [...ALL_LANGUAGES];
+let audSelLangs   = ["English"];
+let subAvailLangs = [...ALL_LANGUAGES];
+let subSelLangs   = ["English","Unknown"];
+let ctxLocationIndex = -1;
+
+// ── Init language lists ───────────────────────────────────────────────────
+function initLangLists(){
+  renderLangList("aud-avail-langs", audAvailLangs, "aud", "avail");
+  renderLangList("aud-sel-langs",   audSelLangs,   "aud", "sel");
+  renderLangList("sub-avail-langs", subAvailLangs, "sub", "avail");
+  renderLangList("sub-sel-langs",   subSelLangs,   "sub", "sel");
+}
+function renderLangList(elId, langs, prefix, side){
+  const el = document.getElementById(elId);
+  el.innerHTML = langs.map(l =>
+    `<div class="lang-item" onclick="selectLang('${elId}',this)">${l}</div>`
+  ).join("");
+}
+
+function selectLang(elId, el){
+  document.querySelectorAll(`#${elId} .lang-item`).forEach(x=>x.classList.remove("selected"));
+  el.classList.add("selected");
+}
+
+function langMove(prefix, fromSide, toSide){
+  const fromId = `${prefix}-${fromSide}-langs`;
+  const toId   = `${prefix}-${toSide}-langs`;
+  const fromArr = prefix==="aud" ? (fromSide==="avail"?audAvailLangs:audSelLangs) : (fromSide==="avail"?subAvailLangs:subSelLangs);
+  const toArr   = prefix==="aud" ? (toSide==="avail"?audAvailLangs:audSelLangs)   : (toSide==="avail"?subAvailLangs:subSelLangs);
+  const sel = document.querySelector(`#${fromId} .lang-item.selected`);
+  if(!sel) return;
+  const lang = sel.textContent;
+  const idx = fromArr.indexOf(lang);
+  if(idx>=0){ fromArr.splice(idx,1); toArr.push(lang); }
+  renderLangList(fromId, fromArr, prefix, fromSide);
+  renderLangList(toId,   toArr,   prefix, toSide);
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────
+async function loadPreview(filepath){
+  const summaryPanel = document.getElementById("panel-summary");
+  const isOnSummary = summaryPanel && summaryPanel.classList.contains("active");
+  const col = document.getElementById("preview-col");
+  const imgEl = document.getElementById("preview-img");
+
+  if(col){
+    col.style.display = isOnSummary ? "flex" : "none";
+    col.style.flexDirection = "column";
+
+    if(isDesktop()){
+      // Desktop: preview fills right column naturally
+      col.style.width = "65%";
+      col.style.flex = "none";
+      if(imgEl){ imgEl.style.height = ""; imgEl.style.flex = "1"; }
+    } else {
+      // Mobile: preview is a fixed height below the summary info
+      col.style.width = "100%";
+      col.style.flex = "none";
+      if(imgEl){ imgEl.style.height = "200px"; imgEl.style.flex = "none"; }
+      // Switch summary-body to column so preview appears below info
+      const body = document.getElementById("summary-body");
+      const infoCol = document.getElementById("summary-info-col");
+      if(body){ body.style.flexDirection = "column"; body.style.overflow = "auto"; }
+      if(infoCol){ infoCol.style.width = "100%"; infoCol.style.flex = "none"; }
+    }
+  }
+  previewCurrentStep = 2;
+  await fetchPreviewFrame(filepath, previewCurrentStep);
+}
+
+async function fetchPreviewFrame(filepath, step){
+  const pct = Math.round((step / previewSteps) * 100);
+  document.getElementById("preview-pos-label").textContent = `${step}/${previewSteps}`;
+  const img = document.getElementById("preview-img");
+  img.innerHTML = `<span style="color:var(--text3);font-size:12px"><i class="ti ti-loader spin"></i></span>`;
+  try{
+    const url = `${SERVER}/api/preview?path=${encodeURIComponent(filepath)}&pos=${pct}%`;
+    const i = new Image();
+    i.onload = ()=>{ img.innerHTML=""; img.appendChild(i); };
+    i.onerror = ()=>{ img.innerHTML=`<span style="color:var(--text3);font-size:12px">Preview unavailable</span>`; };
+    i.src = url;
+    i.style.cssText = "width:100%;border-radius:4px;";
+  }catch{
+    img.innerHTML=`<span style="color:var(--text3);font-size:12px">Preview unavailable</span>`;
+  }
+}
+
+function previewStep(dir){
+  if(!sourceFile) return;
+  previewCurrentStep = Math.max(1, Math.min(previewSteps, previewCurrentStep + dir));
+  fetchPreviewFrame(sourceFile, previewCurrentStep);
+}
+
+// Preview is called directly in loadSource
+
+// ── Right-click on sidebar locations ─────────────────────────────────────
+function renderSidebarWithCtx(){
+  const el = document.getElementById("sidebar-locations");
+  el.innerHTML = "";
+  config.locations.forEach((loc,i)=>{
+    const item = document.createElement("div");
+    item.className = "sidebar-item";
+    item.innerHTML = `<i class="ti ti-device-desktop"></i><span style="flex:1">${esc(loc.name)}</span>`;
+    item.onclick = ()=>{
+      document.querySelectorAll(".sidebar-item").forEach(x=>x.classList.remove("active"));
+      item.classList.add("active");
+      browseLocation(loc.path);
+    };
+    item.addEventListener("contextmenu", e=>{
+      e.preventDefault();
+      ctxLocationIndex = i;
+      const menu = document.getElementById("ctx-menu");
+      menu.style.display = "block";
+      menu.style.left = e.clientX + "px";
+      menu.style.top  = e.clientY + "px";
+    });
+    // Long-press for mobile
+    let pressTimer;
+    item.addEventListener("touchstart", e=>{
+      pressTimer = setTimeout(()=>{
+        ctxLocationIndex = i;
+        const menu = document.getElementById("ctx-menu");
+        menu.style.display = "block";
+        menu.style.left = e.touches[0].clientX + "px";
+        menu.style.top  = e.touches[0].clientY + "px";
+      }, 600);
+    });
+    item.addEventListener("touchend", ()=>clearTimeout(pressTimer));
+    el.appendChild(item);
+  });
+}
+
+// Override renderSidebar
+window.renderSidebar = renderSidebarWithCtx;
+
+document.addEventListener("click", ()=>{
+  document.getElementById("ctx-menu").style.display = "none";
+});
+
+function ctxRemoveLocation(){
+  if(ctxLocationIndex < 0) return;
+  config.locations.splice(ctxLocationIndex, 1);
+  saveConfigToServer();
+  renderSidebar();
+  document.getElementById("ctx-menu").style.display = "none";
+}
+
+// ── Audio track menu (Tracks dropdown) ───────────────────────────────────
+function addAudioTrackMenu(){ addAudioTrack(); }
+function removeSelectedAudioTrack(){
+  // Remove last or selected — for now remove last
+  if(activeAudioTracks.length){ activeAudioTracks.pop(); renderAudioTracks(); }
+}
+function addSubTrackMenu(){ addSubTrack(); }
+function removeSelectedSubTrack(){
+  if(activeSubTracks.length){ activeSubTracks.pop(); renderSubTracks(); }
+}
+
+// ── Preset import from HandBrake JSON ────────────────────────────────────
+async function handlePresetImport(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const json = JSON.parse(text);
+    const r = await fetch(SERVER+"/api/import-presets",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(json)
+    });
+    const data = await r.json();
+    if(data.ok){
+      hbAlert(`Imported ${data.imported} preset${data.imported!==1?"s":""}!`);
+      await loadConfig();
+      renderPresetsList();
+    } else {
+      hbAlert("Import error: "+(data.error||"Unknown"));
+    }
+  }catch(e){
+    hbAlert("Could not read file: "+e.message);
+  }
+  event.target.value = "";
+}
+
+// ── Override openFileBrowser to use renderSidebarWithCtx ─────────────────
+const _baseOpenFileBrowser = window.openFileBrowser;
+window.openFileBrowser = function(mode){
+  _baseOpenFileBrowser(mode);
+  renderSidebarWithCtx();
+};
+
+
+// ── Desktop / responsive detection ───────────────────────────────────────
+function isDesktop(){ return window.innerWidth >= 900; }
+
+function applyLayout(){
+  const body = document.getElementById("summary-body");
+  const infoCol = document.getElementById("summary-info-col");
+  if(!body) return;
+  if(isDesktop()){
+    body.style.flexDirection = "row";
+    if(infoCol) infoCol.style.width = "35%";
+  } else {
+    body.style.flexDirection = "column";
+    if(infoCol) infoCol.style.width = "100%";
+  }
+  // Preview visibility is controlled by showTab, not layout
+}
+applyLayout();
+window.addEventListener("resize", applyLayout);
+
+// ── Preview fetch ─────────────────────────────────────────────────────────
+
+// ── Official / built-in presets ───────────────────────────────────────────
+async function loadOfficialPresets(){
+  try{
+    const r = await fetch(SERVER+"/api/official-presets");
+    const data = await r.json();
+    return data.categories || {};
+  }catch{ return {}; }
+}
+
+// Override renderPresetsList to include official presets
+const _baseRenderPresetsList = window.renderPresetsList;
+window.renderPresetsList = renderPresetsList;
+
+// Apply official preset by name via HandBrakeCLI
+async function applyOfficialPreset(name){
+  // Map known preset names to settings
+  // For official presets we apply common settings based on name pattern
+  const settings = {};
+  const n = name.toLowerCase();
+
+  if(n.includes("2160") || n.includes("4k"))      settings.resolution_limit = "2160p";
+  else if(n.includes("1080"))                      settings.resolution_limit = "1080p";
+  else if(n.includes("720"))                       settings.resolution_limit = "720p";
+  else if(n.includes("576"))                       settings.resolution_limit = "720p";
+  else if(n.includes("480"))                       settings.resolution_limit = "720p";
+
+  if(n.includes("h.265") || n.includes("hevc") || n.includes("x265")) {
+    settings.video_encoder = n.includes("10") ? "h265_10bit" : "h265";
+  } else if(n.includes("h.264") || n.includes("x264")) {
+    settings.video_encoder = "h264";
+  } else if(n.includes("vp9")) {
+    settings.video_encoder = "vp9";
+  } else if(n.includes("av1")) {
+    settings.video_encoder = "av1";
+  }
+
+  if(n.includes("very fast"))       { settings.encoder_preset="veryfast"; settings.rf=22; }
+  else if(n.includes("fast"))       { settings.encoder_preset="fast";     settings.rf=22; }
+  else if(n.includes("super hq"))   { settings.encoder_preset="slow";     settings.rf=18; }
+  else if(n.includes("hq"))         { settings.encoder_preset="slow";     settings.rf=20; }
+  else if(n.includes("production")) { settings.encoder_preset="veryslow"; settings.rf=16; }
+  else                              { settings.encoder_preset="medium";   settings.rf=22; }
+
+  if(n.includes("60")) settings.framerate = "60";
+  else if(n.includes("30")) settings.framerate = "30";
+  else if(n.includes("25")) settings.framerate = "25";
+
+  // Apply to UI
+  if(settings.video_encoder) document.getElementById("video-encoder").value = settings.video_encoder;
+  if(settings.rf !== undefined){ document.getElementById("rf-slider").value=settings.rf; document.getElementById("rf-val").textContent=settings.rf; }
+  if(settings.encoder_preset){
+    const ENC_PRESETS=["ultrafast","superfast","veryfast","faster","fast","medium","slow","slower","veryslow"];
+    const idx=ENC_PRESETS.indexOf(settings.encoder_preset);
+    if(idx>=0){ document.getElementById("enc-preset-slider").value=idx; updatePresetLabel(); }
+  }
+  if(settings.resolution_limit) document.getElementById("resolution-limit").value=settings.resolution_limit;
+  if(settings.framerate) document.getElementById("framerate").value=settings.framerate;
+
+  document.getElementById("preset-path").textContent = `HandBrake Built-in > ${name}`;
+  document.getElementById("preset-modified").style.display="none";
+  closePresets();
+  renderSummary();
+}
+
+
+// ── Persist settings across refresh ──────────────────────────────────────
+const PERSIST_KEYS = [
+  "video-encoder","rf-slider","enc-preset-slider","framerate","color-range",
+  "tune","profile","level","additional-options","container","resolution-limit",
+  "anamorphic","cropping","detelecine","interlace-detection","deinterlace",
+  "deinterlace-preset","deblock","denoise","denoise-preset","chroma-smooth",
+  "sharpen","sharpen-preset","colorspace","rotation",
+];
+const PERSIST_CHECKS = [
+  "passthru-metadata","chapter-markers","grayscale","flip-h",
+  "allow-upscaling","optimal-size","two-pass","turbo-pass",
+  "pt-mp2","pt-mp3","pt-ac3","pt-eac3","pt-dts","pt-dtshd",
+  "pt-truehd","pt-alac","pt-flac","pt-aac","pt-vorbis","pt-opus","pt-pcm",
+  "pt-track-names","aud-first-encoder-only","sub-pt-names",
+  "sub-foreign-scan","sub-add-if-not-matching","sub-closed-captions",
+];
+const PERSIST_RADIOS = ["q-mode","fr-mode"];
+
+// ── Full session persistence ───────────────────────────────────────────────
+// Saves the complete app state including source file, tracks, and all settings
+// so a refresh restores exactly where you left off, like the jlesage desktop app.
+
+function saveSession(){
+  const state = {
+    // Source file
+    sourceFile: sourceFile || "",
+    // Encode settings
+    settings: {},
+    // Tracks
+    audioTracks:  JSON.stringify(activeAudioTracks),
+    subTracks:    JSON.stringify(activeSubTracks),
+    // UI state
+    presetLabel:  document.getElementById("preset-path-label")?.textContent || "",
+    saveAs:       document.getElementById("save-as-footer")?.value || "",
+    outputFolder: outputFolder || "",
+    toPathLabel:  document.getElementById("to-path-label-footer")?.textContent || "",
+    whenDone:     document.getElementById("when-done-footer")?.value || "",
+    rfVal:        document.getElementById("rf-val")?.textContent || "",
+    // Language selections
+    audSelLangs:  JSON.stringify(audSelLangs),
+    subSelLangs:  JSON.stringify(subSelLangs),
+    // Selection behavior
+    audSelBehavior:   document.getElementById("aud-sel-behavior")?.value || "",
+    subSelBehavior:   document.getElementById("sub-sel-behavior")?.value || "",
+    subBurninBehavior:document.getElementById("sub-burnin-behavior")?.value || "",
+  };
+  // Collect all form values
+  PERSIST_KEYS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) state.settings[id]=el.value;
+  });
+  PERSIST_CHECKS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) state.settings[id]=el.checked;
+  });
+  PERSIST_RADIOS.forEach(name=>{
+    const el=document.querySelector(`input[name="${name}"]:checked`);
+    if(el) state.settings[name]=el.value;
+  });
+  try{ fetch(SERVER+"/api/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(state)}); }catch(e){}
+}
+// Alias for backward compat
+const saveSettingsToStorage = saveSession;
+
+async function restoreSession(){
+  let state;
+  try{
+    const r = await fetch(SERVER+"/api/session");
+    state = await r.json();
+    if(!state || state.error) return;
+  }catch{ return; }
+
+  // Restore form values first (instant, no network)
+  const s = state.settings || {};
+  PERSIST_KEYS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && s[id]!==undefined) el.value=s[id];
+  });
+  PERSIST_CHECKS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && s[id]!==undefined) el.checked=!!s[id];
+  });
+  PERSIST_RADIOS.forEach(name=>{
+    if(s[name]){
+      const el=document.querySelector(`input[name="${name}"][value="${s[name]}"]`);
+      if(el) el.checked=true;
+    }
+  });
+
+  // Restore UI labels
+  if(state.presetLabel)  document.getElementById("preset-path-label").textContent = state.presetLabel;
+  if(state.saveAs)       document.getElementById("save-as-footer").value = state.saveAs;
+  if(state.toPathLabel)  document.getElementById("to-path-label-footer").textContent = state.toPathLabel;
+  if(state.outputFolder) outputFolder = state.outputFolder;
+  if(state.whenDone)     { const el=document.getElementById("when-done-footer"); if(el) el.value=state.whenDone; }
+  if(state.rfVal)        document.getElementById("rf-val").textContent = state.rfVal;
+
+  // Restore language selections
+  if(state.audSelLangs) try{
+    audSelLangs = JSON.parse(state.audSelLangs);
+    audAvailLangs = ALL_LANGUAGES.filter(l=>!audSelLangs.includes(l));
+    renderLangList("aud-avail-langs",audAvailLangs,"aud","avail");
+    renderLangList("aud-sel-langs",audSelLangs,"aud","sel");
+  }catch{}
+  if(state.subSelLangs) try{
+    subSelLangs = JSON.parse(state.subSelLangs);
+    subAvailLangs = ALL_LANGUAGES.filter(l=>!subSelLangs.includes(l));
+    renderLangList("sub-avail-langs",subAvailLangs,"sub","avail");
+    renderLangList("sub-sel-langs",subSelLangs,"sub","sel");
+  }catch{}
+
+  // Restore selection behavior dropdowns
+  if(state.audSelBehavior)    { const el=document.getElementById("aud-sel-behavior"); if(el) el.value=state.audSelBehavior; }
+  if(state.subSelBehavior)    { const el=document.getElementById("sub-sel-behavior"); if(el) el.value=state.subSelBehavior; }
+  if(state.subBurninBehavior) { const el=document.getElementById("sub-burnin-behavior"); if(el) el.value=state.subBurninBehavior; }
+
+  // Restore derived UI state
+  updatePresetLabel();
+  toggleQualityMode();
+  toggleCropInputs();
+  toggleDenoisePreset();
+  toggleSharpenPreset();
+
+  // Restore source file — reload tracks from server so audio/sub panels work
+  if(state.sourceFile){
+    sourceFile = state.sourceFile;
+    const name = sourceFile.split("/").pop();
+    document.getElementById("source-bar").innerHTML =
+      `<b>Source:</b> ${esc(name)} — <span style="color:var(--text3)">Restoring session…</span>`;
+    try{
+      const r = await fetch(SERVER+"/api/tracks?path="+encodeURIComponent(sourceFile));
+      sourceInfo = await r.json();
+      const v = sourceInfo.video||{};
+      document.getElementById("source-bar").innerHTML =
+        `<b>Source:</b> ${esc(name)}, ${v.width||"?"}x${v.height||"?"}, ${v.fps||"?"} FPS, `+
+        `${sourceInfo.audio.length} Audio Track${sourceInfo.audio.length!==1?"s":""}, `+
+        `${sourceInfo.subtitles.length} Subtitle Track${sourceInfo.subtitles.length!==1?"s":""}`;
+      // Restore title select
+      const chCount = sourceInfo.chapters.length || 1;
+      document.getElementById("title-select").innerHTML =
+        `<option value="1">1 - ${esc(name)}</option>`;
+      document.getElementById("range-end").value = chCount;
+      // Update dimension info
+      if(v.width){
+        document.getElementById("source-dims-info").style.display="block";
+        document.getElementById("dim-storage").textContent=`${v.width}x${v.height}`;
+        document.getElementById("dim-display").textContent=`${v.width}x${v.height}`;
+        document.getElementById("dim-aspect").textContent="16:9";
+        document.getElementById("final-dims").style.display="block";
+        document.getElementById("final-storage").textContent=`${v.width}x${v.height}`;
+        document.getElementById("final-display").textContent=`${v.width}x${v.height}`;
+        document.getElementById("final-aspect").textContent="16:9";
+      }
+    }catch{
+      sourceInfo = {audio:[],subtitles:[],chapters:[],video:{}};
+      document.getElementById("source-bar").innerHTML =
+        `<b>Source:</b> ${esc(name)} <span style="color:var(--red)">(file may have moved)</span>`;
+    }
+
+    // Restore tracks — use saved state if available, otherwise re-detect
+    try{
+      activeAudioTracks = state.audioTracks ? JSON.parse(state.audioTracks) : 
+        sourceInfo.audio.map(t=>({...t,encoder:"copy",mixdown:"none",bitrate:320,samplerate:0,gain:0,name:t.title||""}));
+      activeSubTracks = state.subTracks ? JSON.parse(state.subTracks) :
+        sourceInfo.subtitles.map(t=>({...t,custom_name:t.title||"",burn_in:false}));
+    }catch{
+      activeAudioTracks = [];
+      activeSubTracks = [];
+    }
+
+    renderAudioTracks();
+    renderSubTracks();
+    renderChapters();
+    renderSummary();
+    loadPreview(sourceFile);
+  }
+}
+
+// Auto-save whenever anything changes
+function setupAutoSave(){
+  const allIds = [...PERSIST_KEYS, ...PERSIST_CHECKS,
+    "save-as-footer","when-done-footer","aud-sel-behavior","sub-sel-behavior","sub-burnin-behavior"];
+  allIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener("change", saveSession);
+  });
+  PERSIST_RADIOS.forEach(name=>{
+    document.querySelectorAll(`input[name="${name}"]`).forEach(el=>{
+      el.addEventListener("change", saveSession);
+    });
+  });
+  ["rf-slider","enc-preset-slider"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener("input", saveSession);
+  });
+}
+
+// Restore session on startup, then setup auto-save
+restoreSession().then(()=>{
+  setTimeout(setupAutoSave, 200);
+}).catch(()=>{
+  setTimeout(setupAutoSave, 200);
+});
+
+// loadSource title/persist logic merged into main loadSource
+
+
+async function resetSession(){
+  if(!await hbConfirm("Clear all saved session data and reset to defaults?")) return;
+  await fetch(SERVER+"/api/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+  location.reload();
+}
+
+
+// ── Passthru metadata toggle button ───────────────────────────────────────
+function togglePassthruMetadata(){
+  const cb  = document.getElementById("passthru-metadata");
+  const btn = document.getElementById("passthru-metadata-btn");
+  if(!cb || !btn) return;
+  cb.checked = !cb.checked;
+  if(cb.checked){
+    btn.style.background = "var(--accent)";
+    btn.style.color = "#fff";
+    btn.innerHTML = '<i class="ti ti-check" style="font-size:14px"></i> Passthru Common Metadata';
+  } else {
+    btn.style.background = "var(--surface2)";
+    btn.style.color = "var(--text2)";
+    btn.innerHTML = '<i class="ti ti-x" style="font-size:14px"></i> Passthru Common Metadata';
+  }
+  saveSession();
+}
+
+// ── Custom alert / confirm ─────────────────────────────────────────────────
+function hbAlert(msg, title){
+  return new Promise(resolve => {
+    document.getElementById("hb-dialog-title").textContent = title||"HandBrake";
+    document.getElementById("hb-dialog-msg").textContent = msg;
+    const actions = document.getElementById("hb-dialog-actions");
+    actions.innerHTML = "";
+    const ok = document.createElement("button");
+    ok.className = "btn-primary"; ok.textContent = "OK";
+    ok.onclick = () => { document.getElementById("hb-dialog").classList.remove("open"); resolve(); };
+    actions.appendChild(ok);
+    document.getElementById("hb-dialog").classList.add("open");
+  });
+}
+function hbConfirm(msg, title){
+  return new Promise(resolve => {
+    document.getElementById("hb-dialog-title").textContent = title||"HandBrake";
+    document.getElementById("hb-dialog-msg").textContent = msg;
+    const actions = document.getElementById("hb-dialog-actions");
+    actions.innerHTML = "";
+    const cancel = document.createElement("button");
+    cancel.className = "btn-cancel"; cancel.textContent = "Cancel";
+    cancel.onclick = () => { document.getElementById("hb-dialog").classList.remove("open"); resolve(false); };
+    const ok = document.createElement("button");
+    ok.className = "btn-primary"; ok.textContent = "OK";
+    ok.onclick = () => { document.getElementById("hb-dialog").classList.remove("open"); resolve(true); };
+    actions.appendChild(cancel);
+    actions.appendChild(ok);
+    document.getElementById("hb-dialog").classList.add("open");
+  });
+}
+
+// ── Dropdown menus ────────────────────────────────────────────────────────
+let _menuJustOpened = false;
+function toggleMenu(id, event){
+  if(event) event.stopPropagation();
+  const menu = document.getElementById(id);
+  if(!menu) return;
+  const wasOpen = menu.classList.contains("open");
+  closeMenus();
+  if(!wasOpen){
+    _menuJustOpened = true;
+    // Position using fixed coords from the trigger element
+    const trigger = event ? event.currentTarget : menu.previousElementSibling;
+    if(trigger){
+      const rect = trigger.getBoundingClientRect();
+      menu.style.top  = rect.bottom + "px";
+      menu.style.left = rect.left + "px";
+    }
+    menu.classList.add("open");
+    const btn = menu.previousElementSibling;
+    if(btn) btn.classList.add("active");
+    setTimeout(()=>{ _menuJustOpened = false; }, 50);
+  }
+}
+function closeMenus(){
+  document.querySelectorAll(".dropdown.open").forEach(d=>d.classList.remove("open"));
+  document.querySelectorAll(".menu-btn.active,.toolbar-split-arrow.active").forEach(b=>b.classList.remove("active"));
+}
+document.addEventListener("click", e=>{
+  if(_menuJustOpened) return;
+  if(!e.target.closest(".menu-item") && !e.target.closest(".toolbar-split")) closeMenus();
+});
+
+// ── Start/Stop toggle ─────────────────────────────────────────────────────
+async function toggleStartStop(){
+  await pollJobs();
+  const encoding = jobs.find(j=>j.status==="encoding");
+  const paused   = jobs.find(j=>j.status==="paused");
+  if(encoding || paused){
+    const active = encoding || paused;
+    cancelJob(active.id);
+  } else {
+    startQueue();
+  }
+}
+function updateStartStopBtn(){
+  const encoding = jobs.find(j=>j.status==="encoding");
+  const paused   = jobs.find(j=>j.status==="paused");
+  const active   = encoding || paused;
+  const hasSource = !!(typeof sourceFile !== 'undefined' && sourceFile);
+  const hasQueued = jobs.some(j=>j.status==="queued"||j.status==="encoding"||j.status==="paused") || hasSource;
+
+  // Add Queue button — enabled only when source is loaded
+  const addBtn   = document.getElementById("add-queue-btn");
+  const addArrow = document.getElementById("add-queue-arrow");
+  const addItems = ["add-menu-add","add-menu-multiple","add-menu-all"];
+  if(addBtn)   addBtn.disabled   = !hasSource;
+  if(addArrow) addArrow.disabled = !hasSource;
+  addItems.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle("disabled", !hasSource);
+  });
+
+  // Start/Stop button — enabled when there are queued/encoding/paused jobs
+  const startBtn = document.getElementById("start-stop-btn");
+  const icon     = document.getElementById("start-stop-icon");
+  const lbl      = document.getElementById("start-stop-label");
+  if(startBtn) startBtn.disabled = !hasQueued;
+  if(icon){
+    if(active){ icon.className="ti ti-player-stop"; icon.style.color="var(--red)"; if(lbl) lbl.textContent="Stop"; }
+    else { icon.className="ti ti-player-play"; icon.style.color=hasQueued?"var(--green)":""; if(lbl) lbl.textContent="Start"; }
+  }
+
+  // Pause/Resume button — enabled only when encoding or paused
+  const prIcon = document.getElementById("pause-resume-icon");
+  const prLbl  = document.getElementById("pause-resume-label");
+  const prBtn  = document.getElementById("pause-resume-btn");
+  if(prBtn) prBtn.disabled = !active;
+  if(prIcon){
+    if(paused){
+      prIcon.className="ti ti-player-play"; prIcon.style.color="var(--green)";
+      if(prLbl) prLbl.textContent="Resume";
+      if(prBtn) prBtn.title="Resume encoding";
+    } else {
+      prIcon.className="ti ti-player-pause"; prIcon.style.color=active?"var(--yellow)":"";
+      if(prLbl) prLbl.textContent="Pause";
+      if(prBtn) prBtn.title="Pause encoding";
+    }
+  }
+
+  // Queue panel buttons
+  const qStart  = document.getElementById("queue-start-btn");
+  const qPause  = document.getElementById("queue-pause-btn");
+  const qResume = document.getElementById("queue-resume-btn");
+  if(qStart && qPause && qResume){
+    qStart.disabled   = !hasQueued || !!active;
+    qStart.style.display  = active ? "none" : "";
+    qPause.style.display  = active && !paused ? "" : "none";
+    qResume.style.display = active && paused  ? "" : "none";
+  }
+}
+// ── Status bar ────────────────────────────────────────────────────────────
+function updateStatusBar(){
+  const el = document.getElementById("status-text");
+  if(!el) return;
+  const encoding = jobs.find(j=>j.status==="encoding");
+  if(encoding){
+    const pct = encoding.progress||0;
+    const eta = encoding.eta ? ` — ETA ${encoding.eta}` : "";
+    el.innerHTML = `<span class="status-progress">Encoding: ${pct}%${eta}</span> — ${(encoding.filename||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}`;
+    return;
+  }
+  const paused = jobs.find(j=>j.status==="paused");
+  if(paused){
+    el.innerHTML = `<span style="color:var(--yellow)">Paused: ${paused.progress||0}%</span> — ${(paused.filename||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")}`;
+    return;
+  }
+  const done = jobs.find(j=>j.status==="done");
+  if(done){ el.textContent="Encode Done!"; return; }
+  const err = jobs.find(j=>j.status==="error");
+  if(err){ el.textContent="Encode failed: "+(err.error||"unknown"); return; }
+  el.textContent = sourceFile ? "Ready" : "No source selected";
+}
+
+</script>
+
+<!-- ══ AUDIO SELECTION BEHAVIOR ══ -->
+<div class="sel-dialog" id="audio-sel-dialog">
+  <div class="sel-inner">
+    <div class="sel-header">
+      <span style="font-size:15px;font-weight:600">Audio Selection Behavior</span>
+      <button class="icon-btn" onclick="closeModal('audio-sel-dialog')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="sel-body">
+      <div class="field-row">
+        <span class="field-label wide">Track Selection Behavior:</span>
+        <select id="aud-sel-behavior" class="field-select">
+          <option value="all_matching">All Matching Selected Languages</option>
+          <option value="first_matching">First Matching Selected Language</option>
+          <option value="all">All Tracks</option>
+          <option value="first">First Track</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div class="lang-cols">
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Available Languages</div>
+          <div class="lang-list" id="aud-avail-langs"></div>
+        </div>
+        <div class="lang-btns">
+          <button class="btn-sm" onclick="langMove('aud','avail','sel')">Add &gt;</button>
+          <button class="btn-sm" onclick="langMove('aud','sel','avail')">&lt; Remove</button>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Selected Languages</div>
+          <div class="lang-list" id="aud-sel-langs"></div>
+        </div>
+      </div>
+      <div class="section-title">Auto Passthru</div>
+      <div class="passthru-grid" id="passthru-grid">
+        <label class="passthru-item"><input type="checkbox" id="pt-mp2"> MP2</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-mp3" checked> MP3</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-ac3" checked> AC-3</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-eac3" checked> EAC-3</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-dts"> DTS</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-dtshd"> DTS-HD</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-truehd"> TrueHD</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-alac"> ALAC</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-flac"> FLAC</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-aac" checked> AAC</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-vorbis"> Vorbis</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-opus" checked> Opus</label>
+        <label class="passthru-item"><input type="checkbox" id="pt-pcm"> PCM</label>
+      </div>
+      <div class="field-row" style="margin-top:10px">
+        <span class="field-label wide">Passthru Fallback:</span>
+        <select id="pt-fallback" class="field-select">
+          <option value="av_aac">AAC</option>
+          <option value="ac3">AC-3</option>
+          <option value="eac3">EAC-3</option>
+          <option value="mp3">MP3</option>
+          <option value="opus" selected>Opus</option>
+          <option value="vorbis">Vorbis</option>
+          <option value="flac16">FLAC 16-bit</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <span class="field-label"></span>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="pt-track-names" checked> Passthru track names
+        </label>
+      </div>
+      <div class="field-row">
+        <span class="field-label wide">Autonaming:</span>
+        <select id="aud-autonaming" class="field-select">
+          <option value="unnamed">Unnamed</option>
+          <option value="language">Language</option>
+          <option value="codec">Codec</option>
+        </select>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <div class="section-title" style="margin-top:0">Audio encoder settings for each selected track:</div>
+        <div style="display:flex;gap:8px;font-size:11px;color:var(--text3);margin-bottom:6px">
+          <span style="min-width:100px">Encoder</span>
+          <span style="min-width:80px">Bitrate/Quality</span>
+          <span style="min-width:80px">Mixdown</span>
+          <span style="min-width:80px">Samplerate</span>
+          <span style="min-width:40px">Gain</span>
+          <span>DRC</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="aud-default-encoder" style="min-width:100px;font-size:12px">
+            <option value="copy">Auto Passthru</option>
+            <option value="av_aac">AAC</option>
+            <option value="ac3">AC-3</option>
+            <option value="eac3">EAC-3</option>
+            <option value="mp3">MP3</option>
+            <option value="opus">Opus</option>
+            <option value="flac16">FLAC 16-bit</option>
+          </select>
+          <div style="display:flex;gap:4px;align-items:center;font-size:12px">
+            <label><input type="radio" name="aud-bq" value="bitrate" checked> Bitrate</label>
+            <select id="aud-default-bitrate" style="width:60px;font-size:12px">
+              <option>160</option><option>192</option><option>224</option><option>256</option><option selected>320</option><option>384</option><option>448</option><option>512</option>
+            </select>
+          </div>
+          <select id="aud-default-mixdown" style="min-width:80px;font-size:12px">
+            <option value="5point1">5.1 Channels</option>
+            <option value="stereo">Stereo</option>
+            <option value="mono">Mono</option>
+            <option value="dpl2">Dolby Pro Logic II</option>
+          </select>
+          <select id="aud-default-samplerate" style="min-width:80px;font-size:12px">
+            <option value="0">Same as sou...</option>
+            <option value="44100">44.1 kHz</option>
+            <option value="48000">48 kHz</option>
+          </select>
+          <span style="font-size:12px;color:var(--text3)">0dB</span>
+          <span style="font-size:12px;color:var(--text3)">Off</span>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin-top:10px">
+          <input type="checkbox" id="aud-first-encoder-only" checked> Use only first encoder for secondary audio
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('audio-sel-dialog')">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SUBTITLE SELECTION BEHAVIOR ══ -->
+<div class="sel-dialog" id="sub-sel-dialog">
+  <div class="sel-inner">
+    <div class="sel-header">
+      <span style="font-size:15px;font-weight:600">Subtitle Selection Behavior</span>
+      <button class="icon-btn" onclick="closeModal('sub-sel-dialog')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="sel-body">
+      <div class="field-row">
+        <span class="field-label wide">Track Selection Behavior:</span>
+        <select id="sub-sel-behavior" class="field-select">
+          <option value="all_matching">All Matching Selected Languages</option>
+          <option value="first_matching">First Matching Selected Language</option>
+          <option value="all">All Tracks</option>
+          <option value="first">First Track</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div class="lang-cols">
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Available Languages</div>
+          <div class="lang-list" id="sub-avail-langs"></div>
+        </div>
+        <div class="lang-btns">
+          <button class="btn-sm" onclick="langMove('sub','avail','sel')">Add &gt;</button>
+          <button class="btn-sm" onclick="langMove('sub','sel','avail')">&lt; Remove</button>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Selected Languages</div>
+          <div class="lang-list" id="sub-sel-langs"></div>
+        </div>
+      </div>
+      <div class="field-row" style="margin-top:8px">
+        <span class="field-label wide">Preferred Language:</span>
+        <select id="sub-preferred-lang" class="field-select">
+          <option value="eng">English</option>
+          <option value="jpn">Japanese</option>
+          <option value="fre">French</option>
+          <option value="ger">German</option>
+          <option value="spa">Spanish</option>
+          <option value="any">Any</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="sub-foreign-scan"> Add Foreign Audio Scan Pass
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="sub-add-if-not-matching"> Add subtitle track if default audio is not selected language
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="sub-closed-captions"> Add Closed Captions when available
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="sub-pt-names" checked> Passthru track names
+        </label>
+      </div>
+      <div class="field-row" style="margin-top:12px">
+        <span class="field-label wide">Burn-In Behavior:</span>
+        <select id="sub-burnin-behavior" class="field-select">
+          <option value="none">None</option>
+          <option value="foreign_audio">Foreign Audio Track</option>
+          <option value="first">First Track</option>
+          <option value="foreign_first">Foreign Audio, then First</option>
+        </select>
+      </div>
+      <div style="margin-top:8px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Burn-In for deficient players*:</div>
+        <div style="display:flex;gap:16px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="sub-burnin-dvd"> DVD Subtitles
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="sub-burnin-bluray"> Blu-ray Subtitles
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px">* Only one of the above subtitle burn options will be applied, starting with the top.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('sub-sel-dialog')">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Context menu -->
+<div class="ctx-menu" id="ctx-menu" style="display:none">
+  <div class="ctx-item danger" id="ctx-remove" onclick="ctxRemoveLocation()"><i class="ti ti-trash" style="margin-right:6px"></i>Remove location</div>
+</div>
+
+<!-- Import Presets -->
+<input type="file" id="preset-import-input" accept=".json" style="display:none" onchange="handlePresetImport(event)">
+
+
+</body>
+</html>
