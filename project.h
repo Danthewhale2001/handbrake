@@ -1,0 +1,15 @@
+#define HB_PROJECT_TITLE        "HandBrake"
+#define HB_PROJECT_NAME         "HandBrake"
+#define HB_PROJECT_URL_WEBSITE  "https://handbrake.fr"
+#define HB_PROJECT_URL_FORUM    "https://forum.handbrake.fr"
+#define HB_PROJECT_VERSION      "1.11.2"
+#define HB_PROJECT_VERSION_MAJOR 1
+#define HB_PROJECT_VERSION_MINOR 11
+#define HB_PROJECT_VERSION_POINT 2
+#define HB_PROJECT_BUILD        2026071700
+#define HB_PROJECT_REPO_URL     ""
+#define HB_PROJECT_REPO_TAG     ""
+#define HB_PROJECT_REPO_REV     0
+#define HB_PROJECT_REPO_HASH    ""
+#define HB_PROJECT_REPO_BRANCH  ""
+#define HB_PROJECT_REPO_REMOTE  ""

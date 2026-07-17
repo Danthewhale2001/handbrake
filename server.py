@@ -6,7 +6,7 @@ Full feature parity with HandBrake desktop app.
 
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-import subprocess, threading, json, os, re, uuid, time
+import subprocess, threading, json, os, re, uuid, time, hashlib, shutil
 from pathlib import Path
 
 OUTPUT_PATH  = os.environ.get("OUTPUT_PATH", "/output")
@@ -229,6 +229,44 @@ def get_track_info(filepath):
 def build_cmd(params, output_file):
     cmd = ["HandBrakeCLI", "-i", params["input_file"], "-o", output_file]
 
+    # If a built-in HandBrake preset is specified, use it directly via --preset
+    # This overrides individual settings and uses HandBrake's own preset logic
+    builtin_preset = params.get("builtin_preset", "")
+    if builtin_preset:
+        cmd += ["--preset", builtin_preset]
+        # Still apply output format, chapter range, tags and audio/sub tracks
+        fmt = params.get("container","mkv")
+        cmd += ["-f", "av_mp4" if fmt == "mp4" else "av_mkv"]
+        if params.get("chapter_markers", True):
+            cmd += ["--markers"]
+        # Chapter range
+        ch_start = params.get("chapter_start")
+        ch_end   = params.get("chapter_end")
+        if ch_start and ch_end and str(ch_start) != str(ch_end):
+            cmd += ["-c", f"{ch_start}-{ch_end}"]
+        # Tags
+        for tag_key, flag in [("tag_title","--title"),("tag_comment","--comment"),
+                               ("tag_genre","--genre"),("tag_description","--desc")]:
+            val = params.get(tag_key,"").strip()
+            if val:
+                cmd += [flag, val]
+        # Audio tracks
+        audio_tracks = params.get("audio_tracks",[])
+        if audio_tracks:
+            nums  = [str(t["track"]) for t in audio_tracks]
+            codecs = [t.get("encoder","copy") for t in audio_tracks]
+            cmd += ["-a", ",".join(nums), "-E", ",".join(codecs)]
+        # Subtitle tracks
+        sub_tracks = params.get("subtitle_tracks",[])
+        if sub_tracks:
+            nums = [str(t["track"]) for t in sub_tracks]
+            cmd += ["-s", ",".join(nums)]
+            burn = next((str(i+1) for i,t in enumerate(sub_tracks) if t.get("burn_in")), None)
+            if burn:
+                cmd += ["--subtitle-burned", burn]
+        cmd += ["--json"]
+        return cmd
+
     # Container
     fmt = params.get("container","mkv")
     cmd += ["-f", "av_mp4" if fmt == "mp4" else "av_mkv"]
@@ -280,6 +318,12 @@ def build_cmd(params, output_file):
 
     if params.get("custom_width") and params.get("custom_height"):
         cmd += ["-w", str(params["custom_width"]), "-l", str(params["custom_height"])]
+
+    if params.get("allow_upscaling"):
+        cmd += ["--upscale"]
+
+    if params.get("optimal_size"):
+        cmd += ["--optimal-size"]
 
     # ── Filters ──
     detelecine = params.get("detelecine","off")
@@ -387,8 +431,14 @@ def build_cmd(params, output_file):
     if additional:
         cmd += additional.split()
 
-    # Apply prefs
+    # Apply prefs (must be loaded before cpu_cores check)
     _prefs = load_prefs()
+
+    # CPU core limit
+    cpu_cores = int(params.get("cpu_cores") or _prefs.get("cpu_cores",0) or 0)
+    if cpu_cores > 0:
+        cmd += ["--cpu", str(cpu_cores)]
+
     num_previews = int(_prefs.get("num_previews", 10))
     cmd += ["--previews", str(num_previews)]
     if not _prefs.get("use_dvdnav", True):
@@ -429,6 +479,17 @@ def build_cmd(params, output_file):
         if any(n for n in names):
             cmd += ["-A", ",".join(names)]
         cmd += ["--audio-fallback", "av_aac"]
+
+    # Auto-passthru copy mask — which codecs are allowed to pass through
+    pt_map = {
+        "pt-aac":"copy:aac","pt-ac3":"copy:ac3","pt-eac3":"copy:eac3",
+        "pt-mp3":"copy:mp3","pt-dts":"copy:dts","pt-dtshd":"copy:dtshd",
+        "pt-truehd":"copy:truehd","pt-flac":"copy:flac","pt-mp2":"copy:mp2",
+        "pt-vorbis":"copy:vorbis","pt-opus":"copy:opus","pt-pcm":"copy:pcm",
+    }
+    enabled = [hb for ui,hb in pt_map.items() if params.get(ui, True)]
+    if enabled:
+        cmd += ["--audio-copy-mask", ",".join(enabled)]
 
     # ── Subtitles ──
     sub_tracks = params.get("subtitle_tracks",[])
@@ -697,6 +758,50 @@ def set_prefs():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+RECENT_FILE = "/config/hb-recent.json"
+MAX_RECENT = 20
+
+def add_recent_file(path):
+    try:
+        try:
+            with open(RECENT_FILE) as f:
+                recent = json.load(f)
+        except FileNotFoundError:
+            recent = []
+        # Remove if already exists
+        recent = [r for r in recent if r.get("path") != path]
+        # Add to front
+        recent.insert(0, {
+            "path": path,
+            "name": Path(path).name,
+            "size": format_size(Path(path).stat().st_size) if Path(path).exists() else "",
+        })
+        recent = recent[:MAX_RECENT]
+        os.makedirs(os.path.dirname(RECENT_FILE), exist_ok=True)
+        with open(RECENT_FILE, "w") as f:
+            json.dump(recent, f, indent=2)
+    except Exception:
+        pass
+
+def format_size(size):
+    for unit in ["B","KB","MB","GB"]:
+        if size < 1024: return f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} TB"
+
+@app.route("/api/recent")
+def get_recent():
+    try:
+        with open(RECENT_FILE) as f:
+            recent = json.load(f)
+        # Filter to only existing files
+        recent = [r for r in recent if Path(r.get("path","")).exists()]
+        return jsonify({"files": recent})
+    except FileNotFoundError:
+        return jsonify({"files": []})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/session")
 def get_session():
     try:
@@ -772,6 +877,9 @@ def mkdir():
 def tracks():
     fp = request.args.get("path","")
     if not fp: return jsonify({"error":"No path"}),400
+    # Track as recent file
+    if Path(fp).is_file():
+        add_recent_file(fp)
     return jsonify(get_track_info(fp))
 
 # Jobs
@@ -911,105 +1019,309 @@ def job_log(jid):
 
 # ── Preview frame ─────────────────────────────────────────────────────────────
 
-@app.route("/api/preview")
-def preview():
-    from flask import send_file
-    import tempfile
-    filepath = request.args.get("path","")
-    position = request.args.get("pos","10%")
-    if not filepath:
-        return jsonify({"error":"No path"}),400
+import hashlib, shutil
 
-    tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
-    tmp.close()
+PREVIEW_CACHE_DIR = "/tmp/hb_preview_cache"
+os.makedirs(PREVIEW_CACHE_DIR, exist_ok=True)
 
-    try:
-        # Step 1: get duration via ffprobe
-        probe = subprocess.run(
-            ["ffprobe","-v","quiet","-print_format","json","-show_format",filepath],
-            capture_output=True, text=True, timeout=20)
-        duration = 120.0
-        if probe.returncode == 0:
-            try:
-                pdata = json.loads(probe.stdout)
-                duration = float(pdata.get("format",{}).get("duration", 120) or 120)
-            except: pass
+_scan_cache = {}
+_scan_lock = threading.Lock()
 
-        if str(position).endswith("%"):
-            pct = float(position[:-1]) / 100.0
-            seek = max(5.0, min(duration * pct, duration - 5))
-        else:
-            seek = max(0, float(position))
-
-        # Step 2: extract frame — -update 1 required for single image output
-        _prev_scale = load_prefs().get("scale_hd_previews", True)
-        _ffmpeg_cmd = ["ffmpeg", "-y", "-ss", str(seek), "-i", filepath, "-frames:v", "1", "-update", "1", "-q:v", "4"]
-        if _prev_scale:
-            _ffmpeg_cmd += ["-vf", "scale='min(1280,iw)':-2"]
-        _ffmpeg_cmd.append(tmp.name)
-        r = subprocess.run(_ffmpeg_cmd, capture_output=True, timeout=45)
-
-        # Step 3: if file too small, try from start of file without seek
+# ── Auto-evict preview cache entries older than 7 days ───────────────────────
+def _evict_preview_cache():
+    while True:
         try:
-            size = os.path.getsize(tmp.name)
-        except:
-            size = 0
+            days = int(load_prefs().get("cache_evict_days", 7))
+            if days > 0:
+                cutoff = time.time() - (days * 24 * 3600)
+                for entry in os.scandir(PREVIEW_CACHE_DIR):
+                    if entry.is_dir():
+                        try:
+                            if entry.stat().st_mtime < cutoff:
+                                shutil.rmtree(entry.path, ignore_errors=True)
+                                with _scan_lock:
+                                    to_del = [k for k,v in _scan_cache.items()
+                                              if any(entry.path in f for f in v.get("frames",[]))]
+                                    for k in to_del:
+                                        del _scan_cache[k]
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+        time.sleep(3600)
 
-        if size < 500:
-            _ffmpeg_cmd2 = ["ffmpeg", "-y", "-i", filepath, "-frames:v", "1", "-update", "1", "-q:v", "4"]
-            if _prev_scale:
-                _ffmpeg_cmd2 += ["-vf", "scale='min(1280,iw)':-2"]
-            _ffmpeg_cmd2.append(tmp.name)
-            r2 = subprocess.run(_ffmpeg_cmd2, capture_output=True, timeout=60)
-            try:
-                size = os.path.getsize(tmp.name)
-            except:
-                size = 0
+threading.Thread(target=_evict_preview_cache, daemon=True).start()
 
-        if size > 500:
-            # Read file into memory before sending so temp file can be cleaned up
-            with open(tmp.name, "rb") as f:
-                img_data = f.read()
-            try: os.unlink(tmp.name)
-            except: pass
-            from flask import Response
-            resp = Response(img_data, mimetype="image/jpeg")
-            resp.headers["Cache-Control"] = "no-cache, no-store"
-            return resp
 
-        err_msg = (r.stderr or b"").decode("utf-8","replace")[-300:]
-        return jsonify({"error": f"Frame extraction failed (size={size}): {err_msg}"}), 500
-
-    except subprocess.TimeoutExpired:
-        return jsonify({"error":"Preview timed out after 45s"}), 500
+@app.route("/api/preview-cache/clear", methods=["POST"])
+def clear_preview_cache():
+    try:
+        shutil.rmtree(PREVIEW_CACHE_DIR, ignore_errors=True)
+        os.makedirs(PREVIEW_CACHE_DIR, exist_ok=True)
+        with _scan_lock:
+            _scan_cache.clear()
+        return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/preview-cache/size")
+def preview_cache_size():
+    try:
+        total = sum(
+            os.path.getsize(os.path.join(dp, f))
+            for dp, _, files in os.walk(PREVIEW_CACHE_DIR)
+            for f in files
+        )
+        return jsonify({"bytes": total, "mb": round(total / 1024 / 1024, 1)})
+    except:
+        return jsonify({"bytes": 0, "mb": 0})
+
+
+def _scan_key(filepath):
+    try:
+        mtime = str(os.path.getmtime(filepath))
+    except:
+        mtime = "0"
+    return hashlib.md5(f"{filepath}|{mtime}".encode()).hexdigest()
+
+
+HB_PREVIEW_BIN = "/usr/local/bin/hb_preview"
+
+def _run_hb_scan(filepath, num_previews=10):
+    """Use hb_preview (libhb) if available, otherwise fall back to ffmpeg."""
+    import sys
+    key = _scan_key(filepath)
+    scan_dir = os.path.join(PREVIEW_CACHE_DIR, key)
+
+    with _scan_lock:
+        if filepath in _scan_cache and _scan_cache[filepath].get("frames"):
+            return _scan_cache[filepath]["frames"]
+        _scan_cache[filepath] = {"frames":[], "count":0, "total":num_previews,
+                                  "scanning":True, "preview_num":0}
+
+    os.makedirs(scan_dir, exist_ok=True)
+    prefs = load_prefs()
+    scale = prefs.get("scale_hd_previews", True)
+    frames = []
+
+    if os.path.exists(HB_PREVIEW_BIN):
+        print(f"[preview] Using hb_preview (libhb) for {os.path.basename(filepath)}", file=sys.stderr)
+        cmd = [HB_PREVIEW_BIN, filepath, scan_dir, str(num_previews)]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, errors="replace")
+        # stdout: one output path per line (preview_000.jpg etc.)
+        # stderr: errors and libhb log messages (discarded in production)
+        written_paths = []
+        for line in proc.stdout:
+            line = line.strip()
+            if line and os.path.isfile(line):
+                written_paths.append(line)
+                with _scan_lock:
+                    _scan_cache[filepath]["preview_num"] = len(written_paths)
+                    _scan_cache[filepath]["total"] = num_previews
+        proc.wait(timeout=120)
+        # Use paths reported by hb_preview; fall back to directory scan
+        if written_paths:
+            frames = sorted(written_paths)
+        else:
+            frames = sorted([
+                os.path.join(scan_dir, f)
+                for f in os.listdir(scan_dir)
+                if f.lower().endswith((".jpg", "jpeg", ".png"))
+                and os.path.getsize(os.path.join(scan_dir, f)) > 500
+            ])
+        print(f"[preview] hb_preview: {len(frames)}/{num_previews} frames for {os.path.basename(filepath)}", file=sys.stderr)
+
+    if not frames:
+        print(f"[preview] Falling back to ffmpeg for {os.path.basename(filepath)}", file=sys.stderr)
+        frames = _generate_frames_ffmpeg(filepath, num_previews, scan_dir, scale)
+
+    with _scan_lock:
+        _scan_cache[filepath] = {"frames":frames, "count":len(frames),
+                                  "total":num_previews, "scanning":False,
+                                  "preview_num":len(frames)}
+    return frames
+
+
+def _generate_frames_ffmpeg(filepath, num_previews, scan_dir, scale=True):
+    """Extract N preview frames as fast as possible, trying hardware accel first."""
+    import concurrent.futures, sys
+
+    # Get duration
+    probe = subprocess.run(
+        ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", filepath],
+        capture_output=True, text=True, timeout=20)
+    duration = 120.0
+    try:
+        duration = float(json.loads(probe.stdout).get("format",{}).get("duration",120) or 120)
+    except: pass
+
+    timestamps = [max(5.0, min(duration*(i+0.5)/num_previews, duration-5))
+                  for i in range(num_previews)]
+    scale_filter = "scale='min(1280,iw)':-2" if scale else None
+    frames = [None] * num_previews
+
+    # Detect available hardware acceleration
+    hw_accel = None
+    try:
+        r = subprocess.run(["ffmpeg", "-hide_banner", "-hwaccels"],
+                          capture_output=True, text=True, timeout=5)
+        accels = r.stdout.lower()
+        if "vaapi" in accels:
+            hw_accel = "vaapi"
+        elif "cuda" in accels:
+            hw_accel = "cuda"
+        elif "videotoolbox" in accels:
+            hw_accel = "videotoolbox"
+        elif "dxva2" in accels:
+            hw_accel = "dxva2"
+    except: pass
+
+    def extract_frame(idx, ts):
+        out = os.path.join(scan_dir, f"frame_{idx:03d}.jpg")
+        success = False
+
+        # Try hardware accelerated first
+        if hw_accel == "vaapi":
+            cmd = ["nice", "-n", "10", "ffmpeg", "-y",
+                   "-threads", "2",
+                   "-hwaccel", "vaapi", "-hwaccel_output_format", "vaapi",
+                   "-ss", str(ts), "-i", filepath,
+                   "-frames:v", "1",
+                   "-vf", "hwdownload,format=nv12" + (",scale='min(1280,iw)':-2" if scale_filter else ""),
+                   "-q:v", "4", "-an", "-sn", out]
+            try:
+                r = subprocess.run(cmd, capture_output=True, timeout=15)
+                success = os.path.exists(out) and os.path.getsize(out) > 500
+            except: pass
+
+        elif hw_accel in ("cuda",):
+            cmd = ["nice", "-n", "10", "ffmpeg", "-y",
+                   "-threads", "2",
+                   "-hwaccel", "cuda",
+                   "-ss", str(ts), "-i", filepath,
+                   "-frames:v", "1",
+                   "-q:v", "4", "-an", "-sn", out]
+            if scale_filter: cmd += ["-vf", scale_filter]
+            try:
+                r = subprocess.run(cmd, capture_output=True, timeout=15)
+                success = os.path.exists(out) and os.path.getsize(out) > 500
+            except: pass
+
+        # Fall back to software decode with skip_frame optimisation
+        if not success:
+            cmd = ["nice", "-n", "10", "ffmpeg", "-y",
+                   "-threads", "2",
+                   "-skip_frame", "noref",
+                   "-ss", str(ts), "-i", filepath,
+                   "-frames:v", "1",
+                   "-q:v", "4", "-an", "-sn", out]
+            if scale_filter: cmd += ["-vf", scale_filter]
+            try:
+                subprocess.run(cmd, capture_output=True, timeout=20)
+            except: pass
+
+        if os.path.exists(out) and os.path.getsize(out) > 500:
+            frames[idx] = out
+        with _scan_lock:
+            if filepath in _scan_cache:
+                done = sum(1 for f in frames if f)
+                _scan_cache[filepath]["preview_num"] = done
+                _scan_cache[filepath]["total"] = num_previews
+
+    # Single thread — VAAPI offloads decode to GPU so no benefit from parallelism
+    # and multiple simultaneous ffmpeg processes would saturate the CPU
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+        list(ex.map(lambda a: extract_frame(*a), enumerate(timestamps)))
+
+    result = sorted([f for f in frames if f])
+    print(f"[preview] ffmpeg ({hw_accel or 'sw'}): {len(result)}/{num_previews} frames for {os.path.basename(filepath)}", file=sys.stderr)
+    return result
+
+
+@app.route("/api/scan", methods=["POST"])
+def scan_file():
+    """Pre-scan a file and generate all preview frames. Called when user opens a source."""
+    data = request.json or {}
+    filepath = data.get("path", "")
+    if not filepath or not os.path.isfile(filepath):
+        return jsonify({"error": "File not found"}), 400
+
+    prefs = load_prefs()
+    num_previews = int(prefs.get("num_previews", 10))
+
+    # Run in background thread so the response returns immediately
+    def _bg():
+        _run_hb_scan(filepath, num_previews)
+
+    with _scan_lock:
+        already = _scan_cache.get(filepath, {}).get("frames")
+
+    if not already:
+        threading.Thread(target=_bg, daemon=True).start()
+
+    return jsonify({"status": "scanning", "previews": num_previews})
+
+
+@app.route("/api/scan/status")
+def scan_status():
+    filepath = request.args.get("path", "")
+    with _scan_lock:
+        info = _scan_cache.get(filepath, {})
+    frames = info.get("frames", [])
+    return jsonify({
+        "ready":       len(frames) > 0 and not info.get("scanning", False),
+        "scanning":    info.get("scanning", False),
+        "count":       len(frames),
+        "preview_num": info.get("preview_num", 0),
+        "total":       info.get("total", 10),
+    })
+
+
+@app.route("/api/preview")
+def preview():
+    from flask import Response
+    filepath = request.args.get("path", "")
+    position = request.args.get("pos", "10%")   # "20%" or frame index "3"
+    if not filepath:
+        return jsonify({"error": "No path"}), 400
+
+    prefs = load_prefs()
+    num_previews = int(prefs.get("num_previews", 10))
+
+    # Get or trigger scan
+    with _scan_lock:
+        info = _scan_cache.get(filepath, {})
+    frames = info.get("frames", [])
+
+    if not frames:
+        # Not scanned yet — run synchronously for the first request, then cache
+        frames = _run_hb_scan(filepath, num_previews)
+
+    if frames:
+        # Resolve position to frame index
+        if str(position).endswith("%"):
+            pct = float(position[:-1]) / 100.0
+            idx = max(0, min(int(pct * len(frames)), len(frames) - 1))
+        else:
+            idx = max(0, min(int(position), len(frames) - 1))
+
+        frame_path = frames[idx]
+        if os.path.exists(frame_path):
+            with open(frame_path, "rb") as f:
+                img_data = f.read()
+            mime = "image/png" if frame_path.lower().endswith(".png") else "image/jpeg"
+            resp = Response(img_data, mimetype=mime)
+            resp.headers["Cache-Control"] = "public, max-age=86400"
+            return resp
+
+    return jsonify({"error": "Preview unavailable"}), 500
+
 @app.route("/api/official-presets")
 def official_presets():
-    """Get HandBrake's built-in preset list from HandBrakeCLI."""
-    try:
-        r = subprocess.run(
-            ["HandBrakeCLI","--preset-list"],
-            capture_output=True, text=True, timeout=15)
-        # Parse the text output into categories and preset names
-        output = r.stdout + r.stderr
-        categories = {}
-        current_cat = "General"
-        for line in output.split("\n"):
-            line = line.strip()
-            if not line: continue
-            # Category lines are unindented with a colon or just a name
-            if line.endswith(":") and not line.startswith("+"):
-                current_cat = line.rstrip(":")
-            elif line.startswith("+"):
-                name = line.lstrip("+ ").strip()
-                if name:
-                    categories.setdefault(current_cat, []).append(name)
-        return jsonify({"categories": categories})
-    except Exception as e:
-        # Return the hardcoded built-in preset list as fallback
-        return jsonify({"categories": BUILTIN_PRESETS})
+    """Return HandBrake built-in preset list."""
+    return jsonify({"categories": BUILTIN_PRESETS})
 
 BUILTIN_PRESETS = {
     "General": [
