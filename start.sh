@@ -5,6 +5,14 @@
 #             Run this after any UI or server code changes.
 # ============================================================
 
+# Get the directory where this script lives
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Create local folders if they don't exist
+mkdir -p "$SCRIPT_DIR/input"
+mkdir -p "$SCRIPT_DIR/output"
+mkdir -p "$SCRIPT_DIR/config"
+
 # Check base image exists locally, pull from DockerHub if not
 if ! docker image inspect handbrake-mobile:base &>/dev/null; then
   echo ""
@@ -38,9 +46,9 @@ docker run -d \
   --restart unless-stopped \
   -p 8888:8888 \
   -e OUTPUT_PATH=/output \
-  -v /dan/input:/storage \
-  -v /dan/output:/output \
-  -v /dan/config:/config \
+  -v "$SCRIPT_DIR/input":/storage \
+  -v "$SCRIPT_DIR/output":/output \
+  -v "$SCRIPT_DIR/config":/config \
   handbrake-mobile:latest
 
 echo ""
