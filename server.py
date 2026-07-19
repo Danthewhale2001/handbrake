@@ -1096,7 +1096,12 @@ def _run_hb_scan(filepath, num_previews=10):
 
     with _scan_lock:
         if filepath in _scan_cache and _scan_cache[filepath].get("frames"):
-            return _scan_cache[filepath]["frames"]
+            # Validate cached frames are real content (>50KB), not black frames
+            cached = _scan_cache[filepath]["frames"]
+            if all(os.path.exists(f) and os.path.getsize(f) > 50000 for f in cached):
+                return cached
+            # Stale/black frames — rescan
+            del _scan_cache[filepath]
         _scan_cache[filepath] = {"frames":[], "count":0, "total":num_previews,
                                   "scanning":True, "preview_num":0}
 
@@ -1313,7 +1318,9 @@ def preview():
                 img_data = f.read()
             mime = "image/png" if frame_path.lower().endswith(".png") else "image/jpeg"
             resp = Response(img_data, mimetype=mime)
-            resp.headers["Cache-Control"] = "public, max-age=86400"
+            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
             return resp
 
     return jsonify({"error": "Preview unavailable"}), 500
