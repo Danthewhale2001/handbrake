@@ -1,68 +1,109 @@
 /*
  * hb_preview — generate preview images using HandBrake's internal libhb
- * Usage: hb_preview <input> <outdir> <num_previews>
- * Outputs: <outdir>/preview_000.jpg, preview_001.jpg, ...
+ * Finds libhb's temp preview dir and copies JPEGs before they're deleted
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <turbojpeg.h>
+#include <sys/inotify.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <pthread.h>
 #include "handbrake/handbrake.h"
 
-static int write_jpeg(const char *path, hb_image_t *img)
+static char g_outdir[4096];
+static int  g_nprev;
+static volatile int g_done = 0;
+static char g_hb_dir[512] = {0};
+static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static void copy_file(const char *src, const char *dst)
 {
-    int w = img->width;
-    int h = img->height;
+    FILE *in  = fopen(src, "rb");
+    FILE *out = fopen(dst, "wb");
+    if (!in || !out) { if(in) fclose(in); if(out) fclose(out); return; }
+    char buf[65536];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
+        fwrite(buf, 1, n, out);
+    fclose(in);
+    fclose(out);
+}
 
-    if (!img->plane[0].data) return -1;
+static int copy_all_from_dir(const char *hb_dir)
+{
+    DIR *d = opendir(hb_dir);
+    if (!d) return 0;
+    int copied = 0;
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL) {
+        if (!strstr(e->d_name, ".jpg")) continue;
+        /* filename format: 0_1_N.jpg where N is preview index */
+        int idx = -1;
+        char *last = strrchr(e->d_name, '_');
+        if (last) idx = atoi(last+1);
+        if (idx < 0 || idx >= g_nprev) continue;
+        char src[1024], dst[1024];
+        snprintf(src, sizeof(src), "%s/%s", hb_dir, e->d_name);
+        snprintf(dst, sizeof(dst), "%s/preview_%03d.jpg", g_outdir, idx);
+        /* Check source has real content (>50KB) */
+        struct stat st;
+        if (stat(src, &st) != 0 || st.st_size < 1000) continue;
+        copy_file(src, dst);
+        printf("%s\n", dst);
+        fflush(stdout);
+        copied++;
+    }
+    closedir(d);
+    return copied;
+}
 
-    int stride = img->plane[0].stride;
-    unsigned char *src = img->plane[0].data;
-    unsigned char *rgb = (unsigned char*)malloc(w * h * 3);
-    if (!rgb) return -1;
+/* Watch /tmp for handbrake- directory, record its path */
+static void *watcher_thread(void *arg)
+{
+    int ifd = inotify_init();
+    if (ifd < 0) return NULL;
+    inotify_add_watch(ifd, "/tmp", IN_CREATE);
 
-    if (stride == w * 4) {
-        /* Packed BGRA */
-        for (int row = 0; row < h; row++) {
-            for (int col = 0; col < w; col++) {
-                unsigned char *px = src + row * stride + col * 4;
-                rgb[(row * w + col) * 3 + 0] = px[2]; /* R */
-                rgb[(row * w + col) * 3 + 1] = px[1]; /* G */
-                rgb[(row * w + col) * 3 + 2] = px[0]; /* B */
+    /* Check for existing handbrake- dir first */
+    DIR *d = opendir("/tmp");
+    if (d) {
+        struct dirent *e;
+        while ((e = readdir(d)) != NULL) {
+            if (strncmp(e->d_name, "handbrake-", 10) == 0) {
+                pthread_mutex_lock(&g_mutex);
+                snprintf(g_hb_dir, sizeof(g_hb_dir), "/tmp/%s", e->d_name);
+                pthread_mutex_unlock(&g_mutex);
+                break;
             }
         }
-    } else if (stride == w * 3) {
-        /* Packed BGR */
-        for (int row = 0; row < h; row++) {
-            for (int col = 0; col < w; col++) {
-                unsigned char *px = src + row * stride + col * 3;
-                rgb[(row * w + col) * 3 + 0] = px[2]; /* R */
-                rgb[(row * w + col) * 3 + 1] = px[1]; /* G */
-                rgb[(row * w + col) * 3 + 2] = px[0]; /* B */
-            }
-        }
-    } else {
-        free(rgb);
-        return -1;
+        closedir(d);
     }
 
-    tjhandle tj = tjInitCompress();
-    if (!tj) { free(rgb); return -1; }
-
-    unsigned char *jpegbuf = NULL;
-    unsigned long jpegsize = 0;
-    int ret = tjCompress2(tj, rgb, w, w * 3, h, TJPF_RGB,
-                          &jpegbuf, &jpegsize, TJSAMP_420, 85, 0);
-    free(rgb);
-
-    if (ret != 0) { tjDestroy(tj); return -1; }
-
-    FILE *f = fopen(path, "wb");
-    if (f) { fwrite(jpegbuf, 1, jpegsize, f); fclose(f); }
-    tjFree(jpegbuf);
-    tjDestroy(tj);
-    return f ? 0 : -1;
+    char buf[4096];
+    while (!g_done) {
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(ifd, &fds);
+        struct timeval tv = {0, 50000};
+        if (select(ifd+1, &fds, NULL, NULL, &tv) <= 0) continue;
+        int len = read(ifd, buf, sizeof(buf));
+        if (len <= 0) continue;
+        int i = 0;
+        while (i < len) {
+            struct inotify_event *ev = (struct inotify_event*)(buf + i);
+            if (ev->len > 0 && strncmp(ev->name, "handbrake-", 10) == 0) {
+                pthread_mutex_lock(&g_mutex);
+                snprintf(g_hb_dir, sizeof(g_hb_dir), "/tmp/%s", ev->name);
+                pthread_mutex_unlock(&g_mutex);
+            }
+            i += sizeof(struct inotify_event) + ev->len;
+        }
+    }
+    close(ifd);
+    return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -78,15 +119,21 @@ int main(int argc, char *argv[])
     if (nprev > 30) nprev = 30;
 
     mkdir(outdir, 0755);
+    strncpy(g_outdir, outdir, sizeof(g_outdir)-1);
+    g_nprev = nprev;
 
-    if (hb_global_init() < 0) return 1;
+    if (hb_global_init_no_hardware() < 0) return 1;
+
+    pthread_t wt;
+    pthread_create(&wt, NULL, watcher_thread, NULL);
+    usleep(100000); /* 100ms for watcher to set up */
 
     hb_handle_t *hb = hb_init(0);
-    if (!hb) return 1;
+    if (!hb) { g_done = 1; pthread_join(wt, NULL); return 1; }
 
     hb_list_t *paths = hb_list_init();
     hb_list_add(paths, (void*)input);
-    hb_scan(hb, paths, 1, nprev, 0, 0, 0, 0, 0, NULL, 0, 0);
+    hb_scan(hb, paths, 0, nprev, 1, 0, 0, 0, 0, NULL, 0, 0);
     hb_list_close(&paths);
 
     hb_state_t state;
@@ -94,36 +141,24 @@ int main(int argc, char *argv[])
     while (1) {
         hb_get_state(hb, &state);
         if (state.state == HB_STATE_SCANDONE) break;
-        if (++ticks > 600) { hb_close(&hb); return 1; }
+        if (++ticks > 600) break;
         hb_snooze(100);
     }
 
-    hb_list_t *titles = hb_get_titles(hb);
-    if (!titles || hb_list_count(titles) == 0) { hb_close(&hb); return 1; }
-
-    hb_title_t *title = (hb_title_t*)hb_list_item(titles, 0);
-    hb_job_t *job = hb_job_init(title);
-    if (!job) { hb_close(&hb); return 1; }
-
-    hb_dict_t *job_dict = hb_job_to_dict(job);
-    hb_job_close(&job);
-    if (!job_dict) { hb_close(&hb); return 1; }
+    /* Copy ALL files from temp dir BEFORE hb_close deletes it */
+    pthread_mutex_lock(&g_mutex);
+    char hb_dir_copy[512];
+    strncpy(hb_dir_copy, g_hb_dir, sizeof(hb_dir_copy));
+    pthread_mutex_unlock(&g_mutex);
 
     int written = 0;
-    for (int i = 0; i < nprev; i++) {
-        hb_image_t *img = hb_get_preview3(hb, i, job_dict);
-        if (!img) continue;
-        char path[4096];
-        snprintf(path, sizeof(path), "%s/preview_%03d.jpg", outdir, i);
-        if (write_jpeg(path, img) == 0) {
-            printf("%s\n", path);
-            fflush(stdout);
-            written++;
-        }
-        hb_image_close(&img);
+    if (hb_dir_copy[0]) {
+        written = copy_all_from_dir(hb_dir_copy);
     }
 
-    hb_value_free(&job_dict);
+    g_done = 1;
+    pthread_join(wt, NULL);
+
     hb_close(&hb);
     hb_global_close();
 
