@@ -49,6 +49,7 @@ docker run -d \
   -v "$SCRIPT_DIR/input":/storage \
   -v "$SCRIPT_DIR/output":/output \
   -v "$SCRIPT_DIR/config":/config \
+  -v "/mnt/SSD_1TB/SSD_1TB/(SSD 1TB) Handbrake Encode Folder":/storage/encodes \
   handbrake-mobile:latest
 
 echo ""
