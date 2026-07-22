@@ -17,8 +17,8 @@ mkdir -p "$SCRIPT_DIR/config"
 if ! docker image inspect handbrake-mobile:base &>/dev/null; then
   echo ""
   echo "  Base image not found locally — pulling from DockerHub..."
-  docker pull danthewhale/handbrake:v0.1
-  docker tag danthewhale/handbrake:v0.1 handbrake-mobile:base
+  docker pull danthewhale/handbrake:v0.2
+  docker tag danthewhale/handbrake:v0.2 handbrake-mobile:base
   if [ $? -ne 0 ]; then
     echo "  Could not pull base image. Run ./build.sh to compile from scratch."
     exit 1

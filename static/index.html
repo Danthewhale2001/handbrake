@@ -4814,10 +4814,7 @@ async function restoreSession(){
       if(config.presets) {
         const p = config.presets.find(x=>x.name===state.presetName);
         if(p) {
-          currentPreset = p;
-          // Allow markPresetModified to work after session restore
-          _presetAppliedOnce = true;
-          setTimeout(()=>{ _presetSnapshot = JSON.stringify(collectSettings()); }, 600);
+          applyPreset(p.name);
         }
       }
     };

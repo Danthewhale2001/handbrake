@@ -762,9 +762,7 @@ def run_encode_job(job_id, params):
             with jobs_lock:
                 jobs[job_id].setdefault("log",[])
                 jobs[job_id]["log"].append("DEBUG: stderr reader finished")
-        _threading.Thread(target=read_stderr, args=(proc, job_id), daemon=True).start()
-
-        # Also read stdout to keep pipe from blocking
+        # Also read stderr to keep pipe from blocking
         def read_stdout(proc, job_id):
             for line in proc.stderr:
                 line = line.strip()
@@ -773,20 +771,16 @@ def run_encode_job(job_id, params):
                         jobs[job_id].setdefault("log",[])
                         jobs[job_id]["log"].append(line)
                         jobs[job_id]["log"] = jobs[job_id]["log"][-500:]
-        _threading.Thread(target=read_stdout, args=(proc, job_id), daemon=True).start()
+        t_stdout = _threading.Thread(target=read_stderr, args=(proc, job_id), daemon=True)
+        t_stderr = _threading.Thread(target=read_stdout, args=(proc, job_id), daemon=True)
+        t_stdout.start()
+        t_stderr.start()
         with jobs_lock:
             jobs[job_id]["pid"] = proc.pid
 
-        # Read stdout (info/errors)
-        for line in proc.stdout:
-            line = line.strip()
-            if not line: continue
-            with jobs_lock:
-                jobs[job_id].setdefault("log",[])
-                jobs[job_id]["log"].append(line)
-                jobs[job_id]["log"] = jobs[job_id]["log"][-500:]
-
         proc.wait()
+        t_stdout.join(timeout=10)
+        t_stderr.join(timeout=10)
         with jobs_lock:
             # -15 = SIGTERM (cancelled), -19 = SIGSTOP (paused) - not errors
             if proc.returncode in (-15, -19) or jobs[job_id].get("status") in ("cancelled","paused"):
