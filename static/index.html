@@ -32,7 +32,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   .desktop-body{display:flex;flex:1;overflow:hidden;min-height:0;}
   .desktop-left{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;min-height:0;}
   .sheet{align-items:center;}
-  .sheet-inner{border-radius:8px;max-height:85vh;max-width:760px;}
+  .sheet-inner{border-radius:8px;height:90vh;max-height:90vh;width:90%;max-width:1100px;}
   .presets-inner{width:300px;}
   .panels{flex:1;overflow:hidden;display:flex;flex-direction:column;}
   /* Panel fills available height on desktop so preview fills it */
@@ -40,7 +40,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   #panel-summary.active{display:flex !important;flex-direction:column;overflow:hidden;flex:1;}
   /* Summary: info left ~35%, preview right ~65% */
   #summary-body{flex-direction:row !important;}
-  .summary-info-col{width:35% !important;overflow-y:auto;}
+  .summary-info-col{width:35% !important;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) var(--surface);}
+  .summary-info-col::-webkit-scrollbar{width:6px;}
+  .summary-info-col::-webkit-scrollbar-track{background:var(--surface);}
+  .summary-info-col::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
   #preview-col{display:flex !important;width:65%;flex-direction:column;}
   #preview-img{flex:1;min-height:300px;}
   /* Wider form labels on desktop */
@@ -74,42 +77,144 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 /* Toolbar split button */
 .toolbar-split{display:flex;align-items:stretch;position:relative;flex-shrink:0;}
 .toolbar-split-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:8px 8px 8px 10px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:10px;white-space:nowrap;}
-.toolbar-split-main i{font-size:22px;}
+.toolbar-split-main i{font-size:40px;}
 .toolbar-split-main:hover{background:var(--surface2);}
-.toolbar-split-arrow{display:flex;align-items:center;padding:0 4px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:10px;border-left:1px solid var(--border);}
+.toolbar-split-arrow{display:flex;align-items:center;justify-content:center;padding:0 8px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:10px;align-self:stretch;}
 .toolbar-split-arrow:hover{background:var(--surface2);}
+
 .toolbar-split.primary .toolbar-split-main i{color:var(--green);}
 /* Bottom status bar */
-.status-bar{background:var(--nav);padding:3px 12px;font-size:12px;color:var(--text2);flex-shrink:0;display:flex;align-items:center;gap:8px;}
+.status-bar{background:var(--nav);padding:5px 12px;font-size:13px;color:var(--text2);flex-shrink:0;display:flex;align-items:center;gap:8px;}
 .status-bar .status-progress{color:var(--accent);font-weight:500;}
 /* ── Top toolbar ── */
 .toolbar{background:var(--nav);padding:0;display:flex;align-items:stretch;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
 .toolbar::-webkit-scrollbar{display:none;}
 /* Labels always hidden by default - shown only on wide screens via JS */
 .tb-label{display:inline;font-size:10px;}
-.toolbar-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 8px;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:0;font-size:10px;flex-shrink:0;white-space:nowrap;}
-.toolbar-btn i{font-size:22px;}
+.toolbar-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 12px;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:0;font-size:11px;flex-shrink:0;white-space:nowrap;}
+.toolbar-btn i{font-size:40px;}
 .toolbar-btn:active{background:var(--surface2);}
 .toolbar-btn.primary i{color:var(--green);}
 .toolbar-btn.pause-btn i{color:var(--yellow);}
 .toolbar-sep{width:1px;background:var(--border);margin:4px 2px;flex-shrink:0;}
-.toolbar-split-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 8px 6px 10px;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:0;font-size:10px;flex-shrink:0;white-space:nowrap;}
-.toolbar-split-main i{font-size:22px;}
+.toolbar-split-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:9px 8px 9px 12px;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:0;font-size:11px;flex-shrink:0;white-space:nowrap;}
+.toolbar-split-main i{font-size:40px;}
 .toolbar-split-main:hover,.toolbar-split-main:active{background:var(--surface2);}
 /* Smaller on mobile */
 @media(max-width:600px){
   .tb-label{font-size:9px;}
-  .toolbar-btn{padding:4px 5px;}
+  #to-path .ti-folder{display:none !important;}
+  #save-as-footer{height:auto;min-height:42px;white-space:normal;word-break:break-all;}
+  /* Fill toolbar width evenly */
+  .toolbar{overflow-x:hidden;}
+  .toolbar-btn{padding:4px 5px;flex:1;}
   .toolbar-btn i{font-size:19px;}
-  .toolbar-split-main{padding:4px 5px;}
+  .toolbar-split{flex:1;display:flex;}
+  .toolbar-split-main{padding:4px 5px;flex:1;}
   .toolbar-split-main i{font-size:19px;}
+  .toolbar-split-arrow{flex-shrink:0;}
+  .toolbar-split-arrow i{font-size:19px !important;}
+  /* Contenteditable placeholder */
+  #save-as-mobile:empty:before{content:attr(data-placeholder);color:var(--text3);pointer-events:none;}
 }
-/* Wide screens */
+/* Wide screens only (900px+) - desktop font sizes */
 @media(min-width:900px){
-  .toolbar-btn{padding:6px 10px;}
-  .toolbar-btn i{font-size:20px;}
+  .tab{font-size:16px !important;padding:8px 14px;font-weight:400;}
+  .menu-btn{font-size:16px !important;padding:5px 14px;font-weight:400;}
+  .meta-label{font-size:16px !important;}
+  .meta-row{font-size:16px !important;}
+  .meta-select{font-size:16px !important;}
+  #preset-path{font-size:16px !important;}
+  #title-select{font-size:16px !important;}
+  .source-bar{font-size:16px !important;}
+  #summary-content{font-size:16px !important;}
+  .save-bar{font-size:16px !important;}
+  .save-label{font-size:16px !important;}
+  .save-input{font-size:16px !important;}
+  .status-bar{font-size:16px !important;}
+  .status-text-el{font-size:16px !important;}
+  .toolbar-btn{padding:10px 14px;font-size:14px;}
+  .toolbar-btn i{font-size:40px;}
+  .toolbar-split-main{padding:10px 10px 10px 14px;font-size:14px;}
+  .toolbar-split-main i{font-size:40px;}
+  .tb-label{font-size:14px;}
+  .toolbar-split-arrow{padding:0 12px;align-self:stretch;}
+  .toolbar-split-arrow svg{width:22px;height:18px;}
+  .btn-sm{font-size:16px !important;padding:5px 12px !important;}
+  #to-path{font-size:16px !important;}
+  #range-type,#range-start,#range-end{font-size:16px !important;}
+  .meta-range{font-size:16px !important;}
+  /* File browser / Open Source sheet */
+  .sheet-inner{font-size:16px !important;}
+  .sheet-inner *{font-size:16px !important;}
+  /* Activity window */
+  .activity-inner{font-size:16px !important;}
+  .activity-inner *{font-size:16px !important;}
+  /* Audio/Subtitle selection behavior dialogs */
+  .sel-inner{font-size:16px !important;}
+  .sel-inner *{font-size:16px !important;}
+  .sel-header span{font-size:20px !important;}
+  .lang-list{font-size:16px !important;}
+  .lang-list *{font-size:16px !important;}
+  .lang-cols *{font-size:16px !important;}
+  /* Track add dropdown menus */
+  #audio-tracks-btn ~ .dropdown *,.track-dropdown *{font-size:16px !important;}
+  /* Preferences panel */
+  .prefs-tab{font-size:16px !important;padding:8px 18px !important;}
+  .prefs-section{font-size:15px !important;}
+  .prefs-row{font-size:16px !important;}
+  .prefs-row label{font-size:16px !important;}
+  .prefs-row input:not([type=checkbox]),.prefs-row select{font-size:16px !important;padding:5px 10px !important;}
+  .prefs-row input[type=checkbox]{width:18px !important;height:18px !important;min-width:18px !important;padding:0 !important;}
+  .prefs-body{font-size:16px !important;}
+  /* Queue panel */
+  .queue-inner{font-size:16px !important;}
+  .queue-inner *{font-size:16px !important;}
+  /* Presets panel */
+  .presets-inner{font-size:16px !important;}
+  .presets-inner *{font-size:16px !important;}
+  .btn-icon i,.btn-icon span{font-size:16px !important;}
+  .btn-icon{width:28px !important;height:28px !important;}
+  .preset-item{font-size:16px !important;padding:14px 18px !important;}
+  /* Dropdown menus */
+  .dropdown{min-width:280px !important;}
+  .dropdown *, .dropdown{font-size:16px !important;}
+  .dd-item{font-size:16px !important;padding:10px 18px !important;}
+  .dd-shortcut{font-size:15px !important;}
+  .dd-label{font-size:16px !important;}
+  /* Dark scrollbars for panels */
+  .panel::-webkit-scrollbar,.summary-info-col::-webkit-scrollbar,.sel-inner::-webkit-scrollbar,.prefs-body::-webkit-scrollbar,.queue-inner::-webkit-scrollbar,.sheet-inner::-webkit-scrollbar{width:8px;}
+  .panel::-webkit-scrollbar-track,.summary-info-col::-webkit-scrollbar-track,.sel-inner::-webkit-scrollbar-track,.prefs-body::-webkit-scrollbar-track,.queue-inner::-webkit-scrollbar-track,.sheet-inner::-webkit-scrollbar-track{background:var(--surface);}
+  .panel::-webkit-scrollbar-thumb,.summary-info-col::-webkit-scrollbar-thumb,.sel-inner::-webkit-scrollbar-thumb,.prefs-body::-webkit-scrollbar-thumb,.queue-inner::-webkit-scrollbar-thumb,.sheet-inner::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+  .panel,.summary-info-col,.sel-inner,.prefs-body,.queue-inner,.sheet-inner{scrollbar-width:thin;scrollbar-color:var(--border2) var(--surface);}
+  /* Panel content - all tabs */
+  .panel, .panel *{font-size:16px !important;}
+  /* Open Source, Queue, Presets panels */
+  .sheet-inner, .sheet-inner *,
+  .queue-inner, .queue-inner *,
+  .presets-panel, .presets-panel *{font-size:16px !important;}
+  /* Fix inputs/selects to not stretch full width in dimensions/filters/video */
+  #panel-dimensions .field-select,
+  #panel-filters .field-select,
+  #panel-video .field-select{width:auto !important;flex:none !important;}
+  #panel-dimensions input[type="text"],
+  #panel-dimensions input[type="number"],
+  #panel-filters input[type="text"],
+  #panel-filters input[type="number"],
+  #panel-video input[type="text"],
+  #panel-video input[type="number"]{width:auto !important;flex:none !important;}
+  /* Summary tab */
+  #summary-content, #summary-content *{font-size:16px !important;}
+  .summary-info-col, .summary-info-col *{font-size:16px !important;}
+  /* Audio/Subtitle track rows */
+  .track-row, .track-row *, .track-empty{font-size:16px !important;}
+  #audio-track-list *, #sub-track-list *{font-size:16px !important;}
+  /* Video tab RF number */
+  #rf-val{font-size:16px !important;}
+  input[type="range"]{font-size:16px !important;}
+  /* Buttons inside panels */
+  .btn-track{font-size:16px !important;}
 }
-
 /* ── Source bar ── */
 .source-bar{background:var(--nav);padding:4px 10px;font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;}
 .source-bar b{color:var(--text);}
@@ -120,15 +225,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 
 /* ── Title / preset bar ── */
 .activity-toolbar-btn{display:none !important;}
-.meta-bar{background:var(--nav);padding:4px 8px;display:flex;flex-direction:column;gap:3px;}
-.meta-row{display:flex;align-items:center;gap:6px;font-size:12px;overflow:hidden;}
+.meta-bar{background:var(--nav);padding:4px 8px;display:flex;flex-direction:column;gap:0;width:100%;box-sizing:border-box;}
+.meta-row{display:flex;align-items:center;gap:6px;font-size:12px;overflow:hidden;width:100%;box-sizing:border-box;}
 @media(max-width:700px){
   .meta-bar{padding:3px 8px;gap:2px;}
   .meta-row{font-size:11px;}
-  .toolbar-split-arrow{padding:0 10px;font-size:16px;}
 }
-.meta-label{color:var(--text3);min-width:38px;}
-.meta-select{flex:1;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:3px 6px;font-size:12px;font-family:inherit;}
+.meta-label{color:var(--text3);min-width:52px;flex-shrink:0;}
+.meta-select{flex:1;background:var(--surface);border:none;color:var(--text);border-radius:var(--radius);padding:3px 6px;font-size:12px;font-family:inherit;outline:none;}
 .meta-range{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);}
 .meta-range input{width:36px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:2px 4px;font-size:12px;text-align:center;}
 .preset-path{flex:1;color:var(--text2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -150,7 +254,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 #panel-summary.active{display:flex;flex-direction:column;overflow:hidden;padding:0;}
 
 /* ── Form elements ── */
-.field-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.field-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:nowrap;}
 .field-label{color:var(--text2);min-width:90px;font-size:13px;flex-shrink:0;}
 .field-label.wide{min-width:120px;}
 select,input[type=text],input[type=number],textarea{
@@ -160,7 +264,7 @@ select,input[type=text],input[type=number],textarea{
 }
 select:focus,input:focus,textarea:focus{border-color:var(--accent);}
 select{-webkit-appearance:none;appearance:none;cursor:pointer;}
-.field-select{flex:1;}
+.field-select{flex:none;width:auto;}
 input[type=range]{flex:1;height:4px;accent-color:var(--accent);cursor:pointer;}
 input[type=checkbox]{
   appearance:none;-webkit-appearance:none;
@@ -212,7 +316,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 .slider-val{color:var(--accent);font-weight:600;min-width:28px;text-align:right;font-size:13px;}
 
 .inline-row{display:flex;align-items:center;gap:6px;flex:1;}
-.num-input{width:64px;}
+.num-input{width:64px;color-scheme:dark;}
 .sep-label{color:var(--text3);font-size:13px;}
 
 /* ── Summary tab ── */
@@ -229,6 +333,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 
 /* ── Audio / Subtitle track list ── */
 .track-toolbar{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.track-break{display:none;}
 .track-list{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .track-row{padding:0;}
 .track-header{display:flex;align-items:center;gap:0;background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;}
@@ -301,6 +406,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
   .queue-detail{flex:1;}
 }
 
+
 /* ── File browser sheet ── */
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:60;display:none;align-items:flex-end;justify-content:center;}
 .sheet.open{display:flex;}
@@ -309,7 +415,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 /* On desktop keep it as a centered modal */
 @media(min-width:700px){
   .sheet{align-items:center;}
-  .sheet-inner{height:85vh;max-height:85vh;border-radius:8px;}
+  .sheet-inner{height:90vh;max-height:90vh;width:90%;max-width:1100px;border-radius:8px;}
   .sheet-handle{display:none;}
 }
 .sheet-handle{display:none !important;}
@@ -317,7 +423,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 .sheet-title{font-size:16px;font-weight:600;}
 .sheet-body{display:flex;flex-direction:column;flex:1;overflow:hidden;}
 /* Locations now a horizontal tab bar at top */
-.sidebar{display:flex;flex-direction:row;flex-shrink:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;background:var(--surface);border-bottom:none;padding:0;gap:0;}
+.sidebar{display:flex;flex-direction:row;flex-shrink:0;flex-wrap:wrap;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;background:var(--surface);border-bottom:none;padding:0;gap:0;}
 .sidebar::-webkit-scrollbar{display:none;}
 .sidebar-item{display:flex;align-items:center;gap:6px;padding:10px 14px;cursor:pointer;font-size:13px;white-space:nowrap;flex-shrink:0;border-bottom:2px solid transparent;color:var(--text2);}
 .sidebar-item:active{background:var(--surface2);}
@@ -369,8 +475,11 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 .preset-item:active{background:var(--row-selected);}
 .preset-name{flex:1;font-size:13px;}
 .preset-actions{display:flex;gap:4px;}
-.btn-icon{width:28px;height:28px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.btn-icon{width:32px;height:32px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;}
 .btn-icon:active{background:var(--surface2);}
+.btn-icon i,.btn-icon span{font-size:24px !important;}
+.btn-icon.star-unset{border:none !important;color:#bbb !important;}
+.btn-icon.star-set{border:none !important;color:#f5c518 !important;}
 .preset-add-btn{display:flex;align-items:center;gap:6px;padding:10px 14px;cursor:pointer;font-size:13px;color:var(--accent);border-top:1px solid var(--border);}
 
 /* ── Responsive helpers ── */
@@ -380,10 +489,26 @@ textarea{resize:vertical;min-height:60px;width:100%;}
   .desktop-only{display:none !important;}
   .mobile-only{display:flex !important;}
   /* Constrain meta-bar rows to single line on mobile */
-  .meta-bar{padding:3px 8px;}
+  .meta-bar{padding:3px 16px 3px 8px;box-sizing:border-box;}
   .meta-row{flex-wrap:nowrap;overflow:hidden;}
+  .meta-row.mobile-wrap{flex-wrap:wrap !important;row-gap:3px;}
   .meta-label{min-width:44px !important;font-size:11px;}
   .meta-select{font-size:11px;}
+  #preset-path{flex:1 !important;min-width:0 !important;max-width:none !important;overflow:hidden !important;}
+  #preset-spacer{display:none !important;}
+  @media(max-width:600px){
+    /* Preset text: single line with truncation on mobile */
+    #preset-path-label{white-space:nowrap !important;text-overflow:ellipsis !important;overflow:hidden !important;}
+    /* Reduce gap between label and input box */
+    .meta-label{min-width:44px !important;font-size:11px;}
+    .meta-row{gap:4px !important;}
+    /* Align mobile preset buttons with preset box */
+    #preset-row + .mobile-only{padding-left:48px;}
+    #preset-row + .mobile-only > div{flex:1;}
+  }
+  .mobile-wrap .mobile-only{flex-basis:100%;margin-top:2px;}
+  .meta-bar{gap:1px;}
+  .meta-row{gap:4px;}
 }
 /* ── Bottom nav (for phone) ── */
 .bottom-nav{display:none;}
@@ -405,17 +530,17 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 .muted{color:var(--text3);}
 .icon-btn{width:32px;height:32px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;}
 .icon-btn:active{background:var(--surface2);}
-.save-bar{background:var(--nav);padding:4px 8px;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;flex-shrink:0;}
+.save-bar{background:var(--nav);padding:10px 12px;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;overflow:hidden;flex-shrink:0;min-height:52px;}
 .save-label{color:var(--text3);font-size:12px;white-space:nowrap;}
-.save-input{flex:1;font-size:12px;min-width:120px;}
+.save-input{flex:1;font-size:12px;min-width:120px;border:none;background:transparent;color:var(--text);outline:none;}
 .to-label{color:var(--text3);font-size:12px;white-space:nowrap;}
 .to-path{color:var(--accent);font-size:12px;cursor:pointer;text-decoration:underline;}
 .when-done-sel{background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:3px 6px;font-size:12px;font-family:inherit;}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:80;display:none;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--surface);border-radius:8px;padding:20px;width:90%;max-width:320px;}
-.modal-title{font-size:15px;font-weight:600;margin-bottom:14px;}
-.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:14px;text-align:center;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:center;}
 
 /* ── Preview panel ── */
 .preview-panel{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;background:var(--nav);border-radius:4px;margin-bottom:12px;}
@@ -440,16 +565,17 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 .prefs-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:55;align-items:center;justify-content:center;}
 .prefs-panel.open{display:flex;}
 .prefs-inner{background:var(--bg);width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;}
-@media(min-width:900px){.prefs-inner{width:90%;max-width:560px;height:90vh;border-radius:8px;border:1px solid var(--border);box-shadow:0 8px 40px rgba(0,0,0,0.5);}}
+@media(min-width:900px){.prefs-inner{width:90%;max-width:1100px;height:90vh;border-radius:8px;border:1px solid var(--border);box-shadow:0 8px 40px rgba(0,0,0,0.5);} .presets-inner{width:90%;max-width:1100px;height:90vh;max-height:none;border-radius:8px;}}
 .prefs-header{background:var(--nav);border-bottom:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .prefs-tabs{display:flex;gap:4px;flex:1;}
 .prefs-tab{padding:5px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-family:inherit;}
 .prefs-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
 .prefs-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;box-sizing:border-box;width:100%;}
 .prefs-section{font-weight:600;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px;}
-.prefs-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:13px;flex-wrap:wrap;min-width:0;}
-.prefs-row label{flex:1;cursor:pointer;min-width:0;word-break:break-word;padding-top:1px;}
-.prefs-row input[type=number]{width:60px;padding:3px 6px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;}
+.prefs-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;flex-wrap:wrap;min-width:0;}
+.prefs-row label{flex:1;cursor:pointer;min-width:0;word-break:break-word;}
+.prefs-row input[type=checkbox]{width:16px;height:16px;min-width:16px;flex-shrink:0;padding:0;}
+.prefs-row input[type=number]{width:60px;padding:3px 6px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;color-scheme:dark;}
 .prefs-row select{padding:3px 6px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;}
 .prefs-row input[type=text]{flex:1;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;}
 .prefs-ext-list{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:6px;min-height:80px;max-height:140px;overflow-y:auto;font-size:13px;margin:4px 0;}
@@ -464,11 +590,19 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 /* ── Selection behavior dialog ── */
 .sel-dialog{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;display:none;align-items:center;justify-content:center;}
 .sel-dialog.open{display:flex;}
-.sel-inner{background:var(--surface);border-radius:8px;width:92%;max-width:520px;max-height:90vh;overflow-y:auto;padding:0;}
+.sel-inner{background:var(--surface);border-radius:8px;width:92%;max-width:520px;max-height:90vh;overflow-y:auto;padding:0;touch-action:pan-y;}
+.sel-inner *{touch-action:pan-y;}
+.sel-inner.sel-scrolling *,.prefs-body.sel-scrolling *,.queue-inner.sel-scrolling *,.sheet-inner.sel-scrolling *,.panel.sel-scrolling *,.summary-info-col.sel-scrolling *{pointer-events:none !important;}
 .sel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .sel-body{padding:14px;}
+.sel-body .field-row{flex-direction:column;align-items:stretch;}
+.sel-body .field-row .field-label{margin-bottom:4px;}
+.sel-body .field-row .field-select{width:100%;}
 .lang-cols{display:flex;gap:8px;margin:10px 0;}
-.lang-list{flex:1;border:1px solid var(--border2);border-radius:4px;background:var(--input-bg);height:140px;overflow-y:auto;}
+.lang-list{flex:1;border:1px solid var(--border2);border-radius:4px;background:var(--input-bg);height:140px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) var(--surface);touch-action:pan-y;}
+.lang-list::-webkit-scrollbar{width:6px;}
+.lang-list::-webkit-scrollbar-track{background:var(--surface);}
+.lang-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 .lang-item{padding:5px 8px;font-size:12px;cursor:pointer;color:var(--text2);}
 .lang-item:hover,.lang-item.selected{background:var(--row-selected);color:var(--text);}
 .lang-btns{display:flex;flex-direction:column;gap:6px;justify-content:center;}
@@ -529,7 +663,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
       <div class="dd-item" onclick="presetMenuAction('setDefault');closeMenus()">Set Default</div>
       <div class="dd-sep"></div>
       <div class="dd-item" onclick="saveNewPreset();closeMenus()">New Preset...<span class="dd-shortcut">Ctrl+N</span></div>
-      <div class="dd-item" onclick="saveNewPreset();closeMenus()">Save</div>
+      <div class="dd-item" onclick="saveCurrentPreset();closeMenus()">Save</div>
       <div class="dd-item" onclick="presetMenuAction('rename');closeMenus()">Rename...</div>
       <div class="dd-item" onclick="presetMenuAction('delete');closeMenus()">Delete...</div>
       <div class="dd-sep"></div>
@@ -557,20 +691,19 @@ textarea{resize:vertical;min-height:60px;width:100%;}
       <i class="ti ti-movie"></i><span class="tb-label">Open Source</span>
     </button>
     <button class="toolbar-split-arrow" onclick="toggleMenu('tb-open-menu')" title="Open options">
-      <i class="ti ti-chevron-down" style="font-size:11px"></i>
+      <svg width="12" height="10" viewBox="0 0 12 10" xmlns="http://www.w3.org/2000/svg" style="display:block"><path d="M1.5 0.5 Q0 0.5 0.7 1.8 L5.3 9.2 Q6 10.5 6.7 9.2 L11.3 1.8 Q12 0.5 10.5 0.5 Z" fill="currentColor"/></svg>
     </button>
     <div class="dropdown" id="tb-open-menu">
       <div class="dd-item" onclick="openFileBrowser('source');closeMenus()">Open Source</div>
       <div class="dd-item" onclick="openFileBrowser('directory');closeMenus()">Open Directory</div>
     </div>
   </div>
-  <div class="toolbar-sep"></div>
   <div class="toolbar-split">
     <button class="toolbar-split-main" id="add-queue-btn" onclick="addToQueue()" title="Add to Queue" disabled>
       <i class="ti ti-plus"></i><span class="tb-label">Add Queue</span>
     </button>
     <button class="toolbar-split-arrow" id="add-queue-arrow" onclick="toggleMenu('tb-add-menu')" title="Add options" disabled>
-      <i class="ti ti-chevron-down" style="font-size:11px"></i>
+      <svg width="12" height="10" viewBox="0 0 12 10" xmlns="http://www.w3.org/2000/svg" style="display:block"><path d="M1.5 0.5 Q0 0.5 0.7 1.8 L5.3 9.2 Q6 10.5 6.7 9.2 L11.3 1.8 Q12 0.5 10.5 0.5 Z" fill="currentColor"/></svg>
     </button>
     <div class="dropdown" id="tb-add-menu">
       <div class="dd-item disabled" id="add-menu-add" onclick="addToQueue();closeMenus()">Add</div>
@@ -584,10 +717,9 @@ textarea{resize:vertical;min-height:60px;width:100%;}
   <button class="toolbar-btn pause-btn" id="pause-resume-btn" onclick="togglePauseResume()" title="Pause" disabled>
     <i class="ti ti-player-pause" id="pause-resume-icon"></i><span class="tb-label" id="pause-resume-label">Pause</span>
   </button>
-    <div class="toolbar-sep"></div>
   <button class="toolbar-btn" onclick="openQueue()" title="Queue" style="position:relative">
     <i class="ti ti-list-check"></i><span class="tb-label">Queue</span>
-    <span id="queue-badge" style="display:none;position:absolute;top:4px;right:4px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;line-height:14px"></span>
+    <span id="queue-badge" style="display:none;position:absolute;top:2px;right:2px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:12px;padding:2px 7px;min-width:20px;text-align:center;line-height:18px"></span>
   </button>
   <button class="toolbar-btn" onclick="openPresets()" title="Presets">
     <i class="ti ti-layout-list"></i><span class="tb-label">Presets</span>
@@ -603,13 +735,21 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 <div class="source-bar" id="source-bar">No source selected — tap Open Source to begin</div>
 <div id="scan-progress-bar" style="height:3px;background:var(--accent);width:0%;transition:width .4s;display:none;"></div>
 <script>
-// Instantly pre-populate source bar, title, and status from localStorage before restoreSession loads
+// Instantly pre-populate source bar from localStorage, but verify with server first
 (function(){
   try{
     const snap = localStorage.getItem("hb_session_snap");
     if(!snap) return;
     const s = JSON.parse(snap);
-    if(s.sourceFile){
+    if(!s.sourceFile) return;
+    // Quickly check server session to see if source was cleared on restart
+    fetch("/api/session").then(r=>r.json()).then(serverState=>{
+      if(!serverState.sourceFile) {
+        // Server cleared it on restart - update localStorage too
+        localStorage.setItem("hb_session_snap", JSON.stringify({sourceFile:"",scannedTitleFiles:"[]"}));
+        return;
+      }
+      // Server still has source - show restoring
       const name = s.sourceFile.split("/").pop();
       const sb = document.getElementById("source-bar");
       if(sb) sb.innerHTML = `<b>Source:</b> ${name} — <span style="color:#888">Restoring…</span>`;
@@ -624,34 +764,50 @@ textarea{resize:vertical;min-height:60px;width:100%;}
           }
         }catch{ ts.innerHTML = `<option>1 - ${name}</option>`; }
       }
-      const st = document.getElementById("status-text");
-      if(st) st.textContent = "Restoring…";
-    }
+      const st = document.querySelector(".status-text-el") || document.getElementById("status-text");
+      if(st) st.textContent = "Ready";
+    }).catch(()=>{});
   }catch{}
 })();
 </script>
 
 <!-- ── Title / Preset bar ── -->
 <div class="meta-bar">
+  <!-- Title row -->
   <div class="meta-row">
     <span class="meta-label">Title:</span>
     <select class="meta-select" id="title-select" style="flex:1;min-width:0;"><option>No source</option></select>
-    <span class="meta-range desktop-only">
-      Range: <select class="when-done-sel" id="range-type" style="font-size:11px">
+    <span class="meta-range desktop-only" style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;">
+      Range: <select class="when-done-sel" id="range-type" style="font-size:16px;border:none;background:transparent;color:var(--text);outline:none;">
         <option>Chapters</option><option>Seconds</option><option>Frames</option>
       </select>
-      <input type="text" id="range-start" value="1" style="width:32px;font-size:11px;text-align:center;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:2px 4px;">
+      <input type="text" id="range-start" value="1" style="width:32px;font-size:16px;text-align:center;background:transparent;border:none;color:var(--text);padding:2px 4px;outline:none;">
       –
-      <input type="text" id="range-end" value="1" style="width:32px;font-size:11px;text-align:center;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:var(--radius);padding:2px 4px;">
+      <input type="text" id="range-end" value="1" style="width:32px;font-size:16px;text-align:center;background:transparent;border:none;color:var(--text);padding:2px 4px;outline:none;">
     </span>
   </div>
-  <div class="meta-row">
+  <!-- Preset row - desktop: single line | mobile: 2 rows -->
+  <!-- Row 1: Preset label + box (both) -->
+  <div class="meta-row" style="align-items:center;">
     <span class="meta-label">Preset:</span>
-    <button id="preset-path" onclick="openPresets()" style="background:var(--surface2);border:1px solid var(--border2);cursor:pointer;text-align:left;color:var(--text2);font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 10px;border-radius:var(--radius);font-family:inherit;display:flex;align-items:center;gap:6px;" title="Click to change preset"><i class="ti ti-layout-list" style="font-size:14px;flex-shrink:0"></i><span id="preset-path-label" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">No preset selected</span></button>
-    <span class="preset-modified" id="preset-modified" style="display:none">Modified</span>
+    <button id="preset-path" onclick="openPresets()" style="background:var(--surface);border:none;cursor:pointer;text-align:left;color:var(--text2);font-size:12px;flex:none;min-width:0;max-width:60%;overflow:hidden;padding:3px 10px;border-radius:var(--radius);font-family:inherit;display:inline-flex;align-items:center;gap:6px;" title="Click to change preset"><span id="preset-path-label" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">No preset selected</span></button>
+    <span id="preset-spacer" style="flex:1"></span>
+    <!-- Desktop only -->
+    <span class="preset-modified desktop-only" id="preset-modified" style="display:none">Modified</span>
     <button class="btn-sm desktop-only" onclick="reloadPreset()">Reload</button>
-    <button class="btn-sm desktop-only" onclick="saveNewPreset()">Save New Preset</button>
-    <button class="btn-sm mobile-only" onclick="saveNewPreset()" style="white-space:nowrap">+ Save</button>
+    <button class="btn-sm desktop-only" onclick="saveCurrentPreset()">Save Preset</button>
+  </div>
+  <!-- Row 2: mobile only — Modified under label, Save+Reload under box -->
+  <div class="mobile-only" style="flex-direction:row;align-items:flex-start;gap:4px;">
+    <!-- Spacer + Modified: matches meta-label width exactly -->
+    <div style="min-width:44px;max-width:44px;flex-shrink:0;padding-top:2px;">
+      <span id="preset-modified-mobile" style="display:none;font-size:11px;color:var(--accent);font-style:italic;">Modified</span>
+    </div>
+    <!-- Save + Reload: fills remaining space matching preset box -->
+    <div style="display:flex;gap:3px;flex:1;min-width:0;">
+      <button class="btn-sm" onclick="reloadPreset()" style="flex:1;">Reload</button>
+      <button class="btn-sm" onclick="saveCurrentPreset()" style="flex:1;">Save Preset</button>
+    </div>
   </div>
 </div>
 
@@ -694,7 +850,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
   <!-- Body: info left, preview right — stacked on mobile, side by side on desktop -->
   <div id="summary-body" style="display:flex;flex:1;min-height:0;overflow:hidden;">
     <!-- Left col: Duration, Tracks, Filters, Size -->
-    <div id="summary-info-col" style="flex:0 0 auto;width:100%;overflow-y:auto;padding:10px 12px;" class="summary-info-col">
+    <div id="summary-info-col" style="flex:0 0 auto;width:100%;overflow-y:auto;padding:10px 12px;scrollbar-width:thin;scrollbar-color:var(--border2) var(--surface);" class="summary-info-col">
       <div id="summary-content">
         <div style="padding:30px;text-align:center;color:var(--text3)">Open a source file to begin</div>
       </div>
@@ -927,17 +1083,36 @@ textarea{resize:vertical;min-height:60px;width:100%;}
   <div class="field-row">
     <span class="field-label">Video Encoder:</span>
     <select id="video-encoder" class="field-select" onchange="updateEncoderOptions()">
-      <option value="h265_10bit">H.265 10-bit (x265)</option>
-      <option value="h265">H.265 (x265)</option>
-      <option value="h264">H.264 (x264)</option>
-      <option value="h264_10bit">H.264 10-bit (x264)</option>
-      <option value="av1">AV1 (SVT)</option>
-      <option value="av1_10bit">AV1 10-bit (SVT)</option>
-      <option value="vp9">VP9</option>
-      <option value="h265_nvenc">H.265 NVENC</option>
-      <option value="h264_nvenc">H.264 NVENC</option>
-      <option value="h265_qsv">H.265 QSV</option>
-      <option value="h264_qsv">H.264 QSV</option>
+      <optgroup label="AV1">
+        <option value="av1">AV1 (SVT)</option>
+        <option value="av1_10bit">AV1 10-bit (SVT)</option>
+      </optgroup>
+      <optgroup label="H.264">
+        <option value="h264">H.264 (x264)</option>
+        <option value="h264_10bit">H.264 10-bit (x264)</option>
+      </optgroup>
+      <optgroup label="H.265">
+        <option value="h265_10bit">H.265 10-bit (x265)</option>
+        <option value="h265">H.265 (x265)</option>
+        <option value="h265_12bit">H.265 12-bit (x265)</option>
+      </optgroup>
+      <optgroup label="Other">
+        <option value="ffv1">FFV1</option>
+        <option value="mpeg4">MPEG-4</option>
+        <option value="mpeg2">MPEG-2</option>
+        <option value="theora">Theora</option>
+        <option value="vp8">VP8</option>
+        <option value="vp9">VP9</option>
+        <option value="vp9_10bit">VP9 10-bit</option>
+      </optgroup>
+      <optgroup label="Hardware (NVENC)">
+        <option value="h265_nvenc">H.265 NVENC</option>
+        <option value="h264_nvenc">H.264 NVENC</option>
+      </optgroup>
+      <optgroup label="Hardware (QSV)">
+        <option value="h265_qsv">H.265 QSV</option>
+        <option value="h264_qsv">H.264 QSV</option>
+      </optgroup>
     </select>
   </div>
   <div class="field-row">
@@ -1053,10 +1228,11 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 <!-- AUDIO -->
 <div class="panel" id="panel-audio">
   <div class="track-toolbar">
-    <button class="btn-track" id="audio-tracks-btn" onclick="addAudioTrackMenu()">Tracks <i class="ti ti-chevron-down" style="font-size:12px"></i></button>
-    <button class="btn-track" onclick="initLangLists();openModal('audio-sel-dialog')"><i class="ti ti-settings"></i> Selection Behavior...</button>
-    <button class="btn-track" onclick="reloadAudioTracks()"><i class="ti ti-refresh"></i> Reload</button>
-    <div style="margin-left:auto;display:flex;gap:6px">
+    <button class="btn-track track-btn-add" id="audio-tracks-btn" onclick="addAudioTrackMenu()">Tracks <i class="ti ti-chevron-down" style="font-size:12px"></i></button>
+    <button class="btn-track track-btn-sel" onclick="initLangLists();openModal('audio-sel-dialog')"><i class="ti ti-settings"></i> Selection Behavior...</button>
+    <button class="btn-track track-btn-reload" onclick="reloadAudioTracks()"><i class="ti ti-refresh"></i> Reload</button>
+    <div class="track-break"></div>
+    <div class="track-btn-actions" style="margin-left:auto;display:flex;gap:6px">
       <button class="btn-track btn-danger" onclick="removeSelectedAudioTrack()"><i class="ti ti-circle-minus"></i> Remove</button>
       <button class="btn-track btn-danger" onclick="clearAudioTracks()"><i class="ti ti-x"></i> Clear</button>
     </div>
@@ -1069,10 +1245,11 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 <!-- SUBTITLES -->
 <div class="panel" id="panel-subtitles">
   <div class="track-toolbar">
-    <button class="btn-track" id="sub-tracks-btn" onclick="addSubTrackMenu()">Tracks <i class="ti ti-chevron-down" style="font-size:12px"></i></button>
-    <button class="btn-track" onclick="initLangLists();openModal('sub-sel-dialog')"><i class="ti ti-settings"></i> Selection Behavior...</button>
-    <button class="btn-track" onclick="reloadSubTracks()"><i class="ti ti-refresh"></i> Reload</button>
-    <div style="margin-left:auto;display:flex;gap:6px">
+    <button class="btn-track track-btn-add" id="sub-tracks-btn" onclick="addSubTrackMenu()">Tracks <i class="ti ti-chevron-down" style="font-size:12px"></i></button>
+    <button class="btn-track track-btn-sel" onclick="initLangLists();openModal('sub-sel-dialog')"><i class="ti ti-settings"></i> Selection Behavior...</button>
+    <button class="btn-track track-btn-reload" onclick="reloadSubTracks()"><i class="ti ti-refresh"></i> Reload</button>
+    <div class="track-break"></div>
+    <div class="track-btn-actions" style="margin-left:auto;display:flex;gap:6px">
       <button class="btn-track btn-danger" onclick="removeSelectedSubTrack()"><i class="ti ti-circle-minus"></i> Remove</button>
       <button class="btn-track btn-danger" onclick="clearSubTracks()"><i class="ti ti-x"></i> Clear</button>
     </div>
@@ -1122,23 +1299,40 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 
 </div><!-- /desktop-left -->
 </div><!-- /desktop-body -->
-<!-- ── Save As bar ── -->
-<!-- Save As row -->
-<div class="save-bar">
-  <span class="save-label desktop-only">Save As:</span>
-  <input type="text" id="save-as-footer" class="save-input" placeholder="Save As..." style="min-width:0;flex:1;">
-  <button id="to-path" onclick="openFileBrowser('output')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);font-size:13px;cursor:pointer;padding:6px 12px;border-radius:var(--radius);font-family:inherit;display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;min-height:34px;"><i class="ti ti-folder" style="font-size:18px"></i><span id="to-path-label-footer" class="desktop-only"> Select output</span></button>
+<!-- ── Bottom bar ── -->
+<!-- Desktop: Save As | To | When Done on one line, Status on next -->
+<!-- Mobile: Save As full width, then Status + To button -->
+<div class="desktop-only" style="flex-direction:column;flex-shrink:0;">
+  <div class="save-bar">
+    <span class="save-label">Save As:</span>
+    <input type="text" id="save-as-footer" class="save-input" placeholder="" style="min-width:0;flex:1;">
+    <span class="save-label" style="color:var(--text3);white-space:nowrap;">To:</span>
+    <button id="to-path" onclick="openFileBrowser('output')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);font-size:15px;cursor:pointer;padding:10px 16px;border-radius:var(--radius);font-family:inherit;display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:42px;"><span id="to-path-label-footer"> Select output</span></button>
+
+  </div>
+  <div style="display:flex;align-items:center;padding:3px 10px;background:var(--nav);border-top:1px solid var(--border);flex-shrink:0;">
+    <span id="status-text" class="status-text-el" style="font-size:13px;color:var(--text2);flex:1;">No source selected</span>
+  </div>
 </div>
-<!-- Status + When Done on same line -->
-<div style="display:flex;align-items:center;padding:3px 10px;background:var(--nav);border-top:1px solid var(--border);flex-shrink:0;gap:8px;">
-  <span id="status-text" style="font-size:12px;color:var(--text2);flex:1;">No source selected</span>
-  <span style="font-size:12px;color:var(--text3);flex-shrink:0;">When Done:</span>
-  <select class="when-done-sel" id="when-done-footer">
-    <option>Do Nothing</option>
-    <option>Send Notification</option>
-  </select>
+<!-- Mobile bottom bar -->
+<div class="mobile-only" style="flex-direction:column;flex-shrink:0;background:var(--nav);">
+  <!-- Line 1: Save As full width - editable textarea -->
+  <div style="display:flex;align-items:center;padding:6px 10px;gap:6px;">
+    <span style="font-size:12px;color:var(--text3);flex-shrink:0;">Save As:</span>
+    <div id="save-as-mobile" contenteditable="true" style="flex:1;min-width:0;color:var(--text);font-size:13px;word-break:break-word;line-height:1.4;background:transparent;border:none;outline:none;font-family:inherit;padding:2px 0;min-height:1.4em;display:flex;align-items:center;-webkit-user-select:text;user-select:text;" data-placeholder="" oninput="document.getElementById('save-as-footer').value=this.textContent;saveSession();" onkeydown="if(event.key==='Enter'){event.preventDefault();}"></div>
+  </div>
+  <!-- Line 2: Status left, To button right -->
+  <div style="display:flex;align-items:center;padding:4px 10px;gap:8px;border-top:1px solid var(--border2);">
+    <span class="status-text-el" style="font-size:12px;color:var(--text2);flex:1;">No source selected</span>
+    <button id="to-path-mobile" onclick="openFileBrowser('output')" onclick="openFileBrowser('output')" style="background:var(--surface2);border:1px solid var(--border2);color:var(--accent);font-size:13px;cursor:pointer;padding:6px 12px;border-radius:var(--radius);font-family:inherit;display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <span id="to-path-label-mobile">Select output</span>
+    </button>
+  </div>
+  <!-- Hidden input for mobile save-as (keeps JS working) -->
+  <input type="text" id="save-as-footer" style="display:none;">
+  <!-- Hidden when-done for mobile -->
+  <select id="when-done-footer" style="display:none;"><option>Do Nothing</option><option>Send Notification</option></select>
 </div>
-<!-- Status bar merged into bottom row above -->
 </div><!-- /app-body -->
 </div><!-- /app -->
 
@@ -1148,21 +1342,19 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 <div class="sheet" id="file-sheet">
   <div class="sheet-inner">
     <div class="sheet-header" style="padding:8px 16px 0 16px;flex-direction:column;align-items:stretch;gap:0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;min-height:36px;">
-        <div class="sheet-title" id="file-sheet-title">Open Source</div>
-        <button class="icon-btn" onclick="closeSheet('file-sheet')"><i class="ti ti-x"></i></button>
+      <div style="display:flex;align-items:center;justify-content:space-between;min-height:36px;gap:8px;">
+        <div class="sheet-title" id="file-sheet-title" style="flex-shrink:0;">Open Source</div>
+        <button class="icon-btn" style="border:none;margin-right:-8px;flex-shrink:0;" onclick="closeSheet('file-sheet')"><i class="ti ti-x"></i></button>
       </div>
-      <div style="display:flex;align-items:center;gap:0;margin:0 -16px;border-top:1px solid var(--border);overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:0;margin:0 -16px;overflow:visible;">
         <div class="sidebar-item active" id="sidebar-home" onclick="browseHome()" style="padding:7px 14px;flex-shrink:0;">Home</div>
-        <div class="sidebar-item" id="sidebar-recent" onclick="browseRecent()" style="padding:7px 14px;flex-shrink:0;">Recent</div>
-        <div id="file-breadcrumb-bar" style="display:none;align-items:center;gap:0;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;border-left:1px solid var(--border);height:100%;"></div>
+        <div class="sidebar-item" id="sidebar-favourites" onclick="browseFavourites()" style="padding:7px 14px;flex-shrink:0;">Favourites</div>
+        <button id="save-fav-btn" onclick="saveCurrentAsFavourite()" style="position:relative;padding:7px 14px;flex-shrink:0;border:none;background:transparent;color:var(--accent);cursor:pointer;font-size:inherit;font-family:inherit;user-select:none;-webkit-tap-highlight-color:transparent;">Save as Favourite<span id="fav-saved-toast" style="display:none;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);color:#4caf50;font-size:12px;font-weight:600;white-space:nowrap;pointer-events:none;transition:opacity 0.4s;"></span></button>
       </div>
+      <div id="file-breadcrumb-bar" style="display:none;align-items:center;gap:0;overflow-x:auto;scrollbar-width:none;min-width:0;margin:8px -16px 0 -16px;padding:10px 20px;"></div>
     </div>
     <div class="sheet-body">
-      <div class="sidebar" id="file-sidebar">
-        <div id="sidebar-locations"></div>
-        <div class="sidebar-add" onclick="addLocation()"><i class="ti ti-plus" style="font-size:15px"></i> Add location</div>
-      </div>
+      <div id="sidebar-locations" style="display:none;"></div>
       <div class="file-pane">
         <div class="file-header">
           <span class="file-header-name">Name</span>
@@ -1205,7 +1397,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
       <div class="queue-subtitle" id="queue-subtitle">0 encodes pending</div>
     </div>
     <div class="queue-toolbar-right" style="position:relative;">
-      <button class="icon-btn" onclick="toggleQueueMenu(event)" title="More options"><i class="ti ti-dots-vertical"></i></button>
+      <button class="icon-btn" style="border:none" onclick="toggleQueueMenu(event)" title="More options"><i class="ti ti-dots-vertical"></i></button>
       <div id="queue-dot-menu" class="dropdown" style="min-width:180px;">
         <div class="dd-item" onclick="queueAction('resetFailed')">Reset Failed Jobs</div>
         <div class="dd-item" onclick="queueAction('resetAll')">Reset All Jobs</div>
@@ -1216,7 +1408,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
         <div class="dd-item" onclick="queueAction('import')">Import Queue…</div>
         <div class="dd-item" onclick="queueAction('export')">Export Queue…</div>
       </div>
-      <button class="icon-btn" onclick="closeQueue()" title="Close"><i class="ti ti-x"></i></button>
+      <button class="icon-btn" style="border:none" onclick="closeQueue()" title="Close"><i class="ti ti-x"></i></button>
     </div>
   </div>
   <div class="queue-body">
@@ -1238,13 +1430,6 @@ textarea{resize:vertical;min-height:60px;width:100%;}
         <div id="qtab-activity-log" style="overflow-y:auto;height:calc(100% - 26px);font-family:monospace;font-size:11px;color:var(--text2);padding:10px 12px;white-space:pre-wrap;word-break:break-all;line-height:1.5;"></div>
       </div>
     </div>
-  </div>
-  <div class="when-done-row">
-    <span style="font-size:12px;color:var(--text3)">When Done:</span>
-    <select class="when-done-sel" id="queue-when-done">
-      <option>Do Nothing</option>
-      <option>Send Notification</option>
-    </select>
   </div>
 </div>
 </div>
@@ -1282,6 +1467,11 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 
     <!-- General tab -->
     <div class="prefs-body" id="prefs-general">
+      <div class="prefs-row">
+        <button class="btn-sm" onclick="resetSession()" style="color:var(--red);border-color:var(--red);background:transparent;">
+          <i class="ti ti-refresh"></i> Clear Session &amp; Reset
+        </button>
+      </div>
       <div class="prefs-row">
         <input type="checkbox" id="pref-auto-naming">
         <label for="pref-auto-naming">Use automatic naming (uses modified source name)</label>
@@ -1331,11 +1521,13 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 
     <!-- Queue tab -->
     <div class="prefs-body" id="prefs-queue" style="display:none">
-      <div class="prefs-row">
+      <div class="prefs-row" style="align-items:center;flex-wrap:nowrap">
         <input type="checkbox" id="pref-pause-low-disk">
-        <label for="pref-pause-low-disk">Pause queue if disk space is lower than:</label>
-        <input type="number" id="pref-low-disk-gb" min="1" value="10" style="width:50px">
-        <span style="font-size:13px;color:var(--text3)">GB</span>
+        <label for="pref-pause-low-disk" style="flex:1;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0">
+          <span style="flex:1;min-width:0">Pause queue if disk space is lower than:</span>
+          <input type="number" id="pref-low-disk-gb" min="1" value="10" style="width:56px;flex-shrink:0">
+          <span style="color:var(--text3);white-space:nowrap;flex-shrink:0">GB</span>
+        </label>
       </div>
       <div class="prefs-row">
         <input type="checkbox" id="pref-clear-completed">
@@ -1346,6 +1538,16 @@ textarea{resize:vertical;min-height:60px;width:100%;}
         <input type="checkbox" id="pref-pause-power-saver">
         <label for="pref-pause-power-saver">Pause encoding when in Power Saver mode</label>
       </div>
+
+      <div class="prefs-row">
+        <input type="checkbox" id="pref-send-file-enabled">
+        <label for="pref-send-file-enabled" style="flex:none">Send file to:</label>
+        <input type="text" id="pref-send-file-to">
+      </div>
+    </div>
+
+    <!-- Advanced tab -->
+    <div class="prefs-body" id="prefs-advanced" style="display:none">
       <div class="prefs-section">When Done</div>
       <div class="prefs-row">
         <label style="flex:none">Default action when queue is completed:</label>
@@ -1364,15 +1566,6 @@ textarea{resize:vertical;min-height:60px;width:100%;}
         <input type="checkbox" id="pref-notify-each-complete">
         <label for="pref-notify-each-complete">Show notification when each item is completed</label>
       </div>
-      <div class="prefs-row">
-        <input type="checkbox" id="pref-send-file-enabled">
-        <label for="pref-send-file-enabled" style="flex:none">Send file to:</label>
-        <input type="text" id="pref-send-file-to">
-      </div>
-    </div>
-
-    <!-- Advanced tab -->
-    <div class="prefs-body" id="prefs-advanced" style="display:none">
       <div class="prefs-section">Preview Cache</div>
       <div class="prefs-row">
         <label style="flex:none">Cache size:</label>
@@ -1468,18 +1661,15 @@ textarea{resize:vertical;min-height:60px;width:100%;}
   <div class="presets-inner">
     <div class="presets-header">
       <span style="font-size:15px;font-weight:600">Presets</span>
-      <button class="icon-btn" onclick="closePresets()"><i class="ti ti-x"></i></button>
+      <button class="icon-btn" style="border:none" onclick="closePresets()"><i class="ti ti-x"></i></button>
     </div>
     <div style="flex:1;overflow-y:auto" id="presets-list"></div>
     <div style="border-top:1px solid var(--border)">
-      <div class="preset-add-btn" onclick="saveNewPreset()">
+      <div class="preset-add-btn" onclick="saveCurrentPreset()">
         <i class="ti ti-plus" style="font-size:16px"></i> Save current settings as preset
       </div>
       <div class="preset-add-btn" onclick="document.getElementById('preset-import-input').click()">
         <i class="ti ti-upload" style="font-size:16px"></i> Import from HandBrake (.json)
-      </div>
-      <div class="preset-add-btn" onclick="resetSession()" style="color:var(--red);border-top:1px solid var(--border)">
-        <i class="ti ti-refresh" style="font-size:16px"></i> Clear session &amp; reset
       </div>
     </div>
   </div>
@@ -1490,7 +1680,7 @@ textarea{resize:vertical;min-height:60px;width:100%;}
 ══════════════════════════════════════════ -->
 <!-- ── Custom alert/confirm dialog ── -->
 <div class="modal-overlay" id="hb-dialog">
-  <div class="modal" style="max-width:360px;">
+  <div class="modal" style="max-width:440px;width:92%;">
     <div class="modal-title" id="hb-dialog-title"></div>
     <div id="hb-dialog-msg" style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:4px;"></div>
     <div class="modal-actions" id="hb-dialog-actions"></div>
@@ -1522,22 +1712,20 @@ textarea{resize:vertical;min-height:60px;width:100%;}
   </div>
 </div>
 
-<!-- SAVE PRESET MODAL -->
-<div class="modal-overlay" id="save-preset-modal">
+
+<!-- ADD LOCATION MODAL -->
+<div class="modal-overlay" id="rename-location-modal">
   <div class="modal">
-    <div class="modal-title">Save New Preset</div>
+    <div class="modal-title">Rename Favourite</div>
     <div class="field-row"><span class="field-label">Name:</span>
-      <input type="text" id="new-preset-name" class="field-select" placeholder="My Preset"></div>
-    <div class="field-row"><span class="field-label">Category:</span>
-      <input type="text" id="new-preset-cat" class="field-select" value="My Presets"></div>
+      <input type="text" id="rename-loc-name" class="field-select" placeholder="Friendly name"></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal('save-preset-modal')">Cancel</button>
-      <button class="btn-primary" onclick="confirmSavePreset()">Save</button>
+      <button class="btn-cancel" onclick="closeModal('rename-location-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmRenameLocation()">Save</button>
     </div>
   </div>
 </div>
 
-<!-- ADD LOCATION MODAL -->
 <div class="modal-overlay" id="add-location-modal">
   <div class="modal">
     <div class="modal-title">Add Storage Location</div>
@@ -1614,6 +1802,11 @@ async function loadConfig(){
     const r = await fetch(SERVER+"/api/config");
     config = await r.json();
     renderPresetsList();
+    // Apply default preset if no preset currently selected
+    if(config.defaultPreset && !currentPreset){
+      const p = config.presets?.find(x=>x.name===config.defaultPreset);
+      if(p) applyPreset(p.name);
+    }
   }catch{}
 }
 async function saveConfigToServer(){
@@ -1713,6 +1906,26 @@ async function browseRecent(){
   }catch{
     list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3)">Could not load recent files</div>';
   }
+}
+
+function browseFavourites(){
+  setSidebarActive("sidebar-favourites");
+  const bar = document.getElementById("file-breadcrumb-bar");
+  bar.innerHTML = ""; bar.style.display = "none";
+  const list = document.getElementById("file-list");
+  const locs = config.locations || [];
+  if(!locs.length){
+    list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3)">No favourites saved yet. Browse to a folder and click "Save as Favourite".</div>';
+    return;
+  }
+  list.innerHTML = "";
+  locs.forEach((loc, i) => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:8px;padding:8px 12px;margin:4px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);cursor:pointer;";
+    row.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(loc.name)}<span style="color:var(--text3);font-size:12px;margin-left:8px">${esc(loc.path)}</span></span><button class="icon-btn" style="border:none;flex-shrink:0;width:22px;height:22px;font-size:13px;color:var(--text3)" title="Rename" onclick="event.stopPropagation();editLocationName(${i});browseFavourites()"><i class="ti ti-pencil"></i></button><button class="icon-btn" style="border:none;flex-shrink:0;width:22px;height:22px;font-size:13px;color:var(--red)" title="Remove" onclick="event.stopPropagation();deleteLocation(${i})"><i class="ti ti-trash"></i></button>`;
+    row.onclick = () => browseLocation(loc.path);
+    list.appendChild(row);
+  });
 }
 
 async function browseHome(){
@@ -1918,6 +2131,9 @@ async function confirmFileSelection(){
       if(!outputFolder){ hbAlert("Navigate to a folder first"); return; }
       const label = outputFolder.split("/").pop() || outputFolder;
       document.getElementById("to-path-label-footer").textContent = label;
+      const mobLabel = document.getElementById("to-path-label-mobile");
+      if(mobLabel) mobLabel.textContent = label;
+      saveSession();
       closeSheet("file-sheet");
       return;
     }
@@ -1972,7 +2188,8 @@ async function addAllScannedToQueue(){
   if(!files.length){ hbAlert("No files to add. Open a source or directory first."); return; }
   const settings = collectSettings();
   let added = 0;
-  for(const f of files){
+  const sortedFiles = [...files].sort((a,b)=>a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:"base"}));
+  for(const f of sortedFiles){
     const stem = f.name.replace(/\.[^.]+$/, "");
     const ext = settings.container==="mp4"?(currentPrefs?.mp4_extension?".m4v":".mp4"):".mkv";
     let saveName = stem + ext;
@@ -1995,7 +2212,6 @@ async function addAllScannedToQueue(){
   }
   pollJobs();
   updateQueueBadge();
-  hbAlert(`Added ${added} file${added!==1?"s":""} to the queue.`);
 }
 
 async function addDirectoryToQueue(folderPath){
@@ -2238,7 +2454,6 @@ async function confirmMultiTitles(){
   closeMultiTitles();
   pollJobs();
   updateQueueBadge();
-  hbAlert(`Added ${added} file${added!==1?"s":""} to the queue.`);
 }
 
 async function loadSource(path){
@@ -2258,6 +2473,8 @@ async function loadSource(path){
     }
     const autoExt = currentPrefs?.mp4_extension && (collectSettings().container==="mp4") ? ".m4v" : ".mkv";
     setEl("save-as-footer","value", autoName+autoExt);
+    const _mob = document.getElementById("save-as-mobile");
+    if(_mob){ if(_mob.contentEditable==="true") _mob.textContent = autoName+autoExt; else _mob.value !== undefined ? _mob.value = autoName+autoExt : _mob.textContent = autoName+autoExt; }
 
     try{
       const r = await fetch(SERVER+"/api/tracks?path="+encodeURIComponent(path));
@@ -2298,11 +2515,74 @@ async function loadSource(path){
     setEl("range-end","value", chCount);
     setEl("range-start","value", 1);
 
-    // Auto-populate tracks
-    activeAudioTracks = sourceInfo.audio.map(t=>({
-      ...t, encoder:"copy", mixdown:"none", bitrate:320, samplerate:0, gain:0, name:t.title||""
+    // Auto-populate tracks based on selection behavior and language filters
+    const _audBehavior = document.getElementById("aud-sel-behavior")?.value || "all";
+    const _subBehavior = document.getElementById("sub-sel-behavior")?.value || "all";
+    const _audLangs = audSelLangs.map(l=>l.toLowerCase());
+    const _subLangs = subSelLangs.map(l=>l.toLowerCase());
+
+    // Map ISO 639-2 codes to full names for matching
+    const _isoMap = {
+      "eng":"english","en":"english","jpn":"japanese","jp":"japanese","ja":"japanese",
+      "und":"unknown","fre":"french","fr":"french","ger":"german","de":"german",
+      "spa":"spanish","es":"spanish","ita":"italian","it":"italian",
+      "por":"portuguese","pt":"portuguese","rus":"russian","ru":"russian",
+      "chi":"chinese","zh":"chinese","kor":"korean","ko":"korean",
+      "ara":"arabic","ar":"arabic","dut":"dutch","nl":"dutch",
+      "swe":"swedish","sv":"swedish","nor":"norwegian","no":"norwegian",
+      "dan":"danish","da":"danish","fin":"finnish","fi":"finnish",
+      "pol":"polish","pl":"polish","hun":"hungarian","hu":"hungarian",
+      "cze":"czech","cs":"czech","rum":"romanian","ro":"romanian",
+      "tur":"turkish","tr":"turkish","heb":"hebrew","he":"hebrew",
+      "tha":"thai","th":"thai","vie":"vietnamese","vi":"vietnamese",
+      "ind":"indonesian","id":"indonesian","may":"malay","ms":"malay",
+      "fil":"filipino","ukr":"ukrainian","uk":"ukrainian",
+      "hrv":"croatian","hr":"croatian","gre":"greek","el":"greek","nob":"norwegian"
+    };
+    function _matchesLang(t, langs) {
+      const code = (t.language||"und").toLowerCase();
+      const fullName = _isoMap[code] || code;
+      const langsLower = langs.map(l=>l.toLowerCase());
+      return langsLower.includes("any") || langsLower.includes(code) || 
+             langsLower.includes(fullName) || (langsLower.includes("unknown") && code==="und");
+    }
+
+    let _filtAudio;
+    if(_audBehavior === "all") {
+      _filtAudio = sourceInfo.audio;
+    } else if(_audBehavior === "none") {
+      _filtAudio = [];
+    } else if(_audBehavior === "first") {
+      _filtAudio = sourceInfo.audio.slice(0,1);
+    } else if(_audBehavior === "first_matching") {
+      const m = sourceInfo.audio.find(t=>_matchesLang(t,_audLangs));
+      _filtAudio = m ? [m] : sourceInfo.audio.slice(0,1);
+    } else { // all_matching
+      _filtAudio = sourceInfo.audio.filter(t=>_matchesLang(t,_audLangs));
+      if(!_filtAudio.length) _filtAudio = sourceInfo.audio.slice(0,1);
+    }
+
+    let _filtSubs;
+    if(_subBehavior === "all") {
+      _filtSubs = sourceInfo.subtitles;
+    } else if(_subBehavior === "none") {
+      _filtSubs = [];
+    } else if(_subBehavior === "first") {
+      _filtSubs = sourceInfo.subtitles.slice(0,1);
+    } else if(_subBehavior === "first_matching") {
+      const m = sourceInfo.subtitles.find(t=>_matchesLang(t,_subLangs));
+      _filtSubs = m ? [m] : sourceInfo.subtitles.slice(0,1);
+    } else { // all_matching
+      _filtSubs = sourceInfo.subtitles.filter(t=>_matchesLang(t,_subLangs));
+    }
+
+    const _audLangNames = {"eng":"English","jpn":"Japanese","fre":"French","ger":"German","spa":"Spanish","ita":"Italian","por":"Portuguese","rus":"Russian","chi":"Chinese","kor":"Korean","ara":"Arabic","dut":"Dutch","und":"","en":"English","ja":"Japanese","fr":"French","de":"German","es":"Spanish","it":"Italian","pt":"Portuguese","ru":"Russian","zh":"Chinese","ko":"Korean","ar":"Arabic","nl":"Dutch"};
+    activeAudioTracks = _filtAudio.map(t=>({
+      ...t, encoder:"copy", mixdown:"none", bitrate:t.bitrate||320, samplerate:0, gain:0,
+      name: t.title || _audLangNames[t.language||"und"] || "",
+      src_bitrate:t.bitrate||0, src_samplerate:t.samplerate||0
     }));
-    activeSubTracks = sourceInfo.subtitles.map(t=>({
+    activeSubTracks = _filtSubs.map(t=>({
       ...t, custom_name:t.title||"", burn_in:false
     }));
 
@@ -2330,7 +2610,12 @@ async function loadSource(path){
 
 // ── Summary ────────────────────────────────────────────────────────────────
 function renderSummary(){
-  if(!sourceFile){return;}
+  if(!sourceFile){
+    document.getElementById("summary-content").innerHTML = "";
+    const previewCol = document.getElementById("preview-col");
+    if(previewCol) previewCol.style.display = "none";
+    return;
+  }
   const v = sourceInfo.video||{};
   const enc = document.getElementById("video-encoder").value;
   const fps = document.getElementById("framerate").value;
@@ -2365,10 +2650,12 @@ function renderSummary(){
     return `${mix}${codec} - ${lang}, ${enc2}`;
   });
   const subLines=activeSubTracks.map(t=>{
-    const lang=t.language&&t.language!=="und"?t.language.toUpperCase():(t.title||"Unknown");
+    const name=t.custom_name||t.title||"";
+    const langTag=t.language&&t.language!=="und"?`[${t.language}]`:"";
     const codec=(t.codec||"PGS").toUpperCase();
-    const flags=[t.forced?"Forced":"",t.burn_in?"Burn-in":"",t.default?"Default":""].filter(Boolean).join(", ");
-    return `${lang} (${codec})${flags?" — "+flags:""}`;
+    const flags=[t.default?"Default":"",t.forced?"Forced":"",t.burn_in?"Burn In":""].filter(Boolean).join(" · ");
+    const label=[name,langTag].filter(Boolean).join(" ");
+    return `${label} (${codec})${flags?" — "+flags:""}`;
   });
   const tracksArr=[videoLine,...audioLines,...subLines,chMarkers?"Chapter Markers":""].filter(Boolean);
 
@@ -2408,7 +2695,17 @@ function renderAudioTracks(){
   activeAudioTracks.forEach((t,i)=>{
     const row = document.createElement("div");
     row.className="track-row";
-    const srcLabel = `${t.track} - ${t.language||"und"} (${t.codec||"?"}, ${t.channels||2} ch)`;
+    const _audLangMap = {"eng":"English","jpn":"Japanese","fre":"French","ger":"German","spa":"Spanish","ita":"Italian","por":"Portuguese","rus":"Russian","chi":"Chinese","kor":"Korean","ara":"Arabic","dut":"Dutch","und":"Unknown","en":"English","ja":"Japanese","fr":"French","de":"German","es":"Spanish"};
+    const _audLangName = _audLangMap[t.language||"und"] || (t.language||"und").toUpperCase();
+    const _audLangTag = t.language && t.language !== "und" ? `[${t.language}]` : "";
+    const _audCodec = (t.codec||"?").toUpperCase();
+    const _audCh = t.channel_layout ? `${t.channel_layout}` : (t.channels ? `${t.channels}ch` : "");
+    const _audBr = t.src_bitrate && t.src_bitrate > 0 ? `${t.src_bitrate}kbps` : "";
+    const _audHz = t.src_samplerate ? `${Math.round(t.src_samplerate/1000)}kHz` : "";
+    const _audChFmt = _audCh ? `${_audCh}ch` : "";
+    const _audSpecs = [_audCodec, _audChFmt, _audBr, _audHz].filter(Boolean).join(", ");
+    const _audTitle = t.name || (t.title && t.title !== "" ? t.title : _audLangName);
+    const srcLabel = `${t.track} - ${_audTitle} ${_audLangTag} (${_audSpecs})`.trim();
     const enc = !t.encoder||t.encoder==="copy" ? "Passthru" : t.encoder.replace("av_","").replace("copy:","").toUpperCase();
     const mix = t.mixdown && t.mixdown!=="none" ? ` · ${t.mixdown}` : "";
     const flags = [t.default?"Default":"", t.forced?"Forced":""].filter(Boolean).join(" · ");
@@ -2423,10 +2720,10 @@ function renderAudioTracks(){
         <button class="btn-track btn-danger" style="margin:4px 8px" onclick="event.stopPropagation();removeAudioTrack(${i})"><i class="ti ti-trash"></i></button>
       </div>
       <div class="track-detail" id="aud-detail-${i}">
-        <div class="field-row"><span class="field-label">Name:</span><input type="text" value="${esc(t.name||"")}" oninput="activeAudioTracks[${i}].name=this.value;renderSummary()"></div>
+        <div class="field-row"><span class="field-label">Name:</span><input type="text" value="${esc(t.name!==undefined?t.name:(t.title||""))}" placeholder="(no name)" oninput="activeAudioTracks[${i}].name=this.value;renderSummary()"></div>
         <div class="field-row"><span class="field-label">Encoder:</span>
           <select class="field-select" onchange="activeAudioTracks[${i}].encoder=this.value;renderAudioTracks()">
-            ${AUDIO_ENCODERS.map(e=>`<option${t.encoder===e?" selected":""}>${e}</option>`).join("")}
+            ${AUDIO_ENCODERS.map(e=>`<option value="${e}"${t.encoder===e?" selected":""}>${e==="copy"?"Passthru":e}</option>`).join("")}
           </select></div>
         <div class="field-row"><span class="field-label">Mixdown:</span>
           <select class="field-select" onchange="activeAudioTracks[${i}].mixdown=this.value">
@@ -2464,7 +2761,27 @@ function setDefaultAudio(idx){
 
 function removeAudioTrack(i){ activeAudioTracks.splice(i,1); renderAudioTracks(); renderSummary(); saveSession(); }
 function clearAudioTracks(){ activeAudioTracks=[]; renderAudioTracks(); saveSession(); }
-function reloadAudioTracks(){ activeAudioTracks=sourceInfo?(sourceInfo.audio||[]).map(t=>({...t,encoder:"copy",mixdown:"none",bitrate:320,samplerate:0,gain:0,name:t.title||""})):[];renderAudioTracks(); }
+function reloadAudioTracks(){
+  if(!sourceInfo) return;
+  const _audBehavior = document.getElementById("aud-sel-behavior")?.value || "all";
+  const _audLangs = audSelLangs.map(l=>l.toLowerCase());
+  let _filtAudio;
+  if(_audBehavior === "all") {
+    _filtAudio = sourceInfo.audio;
+  } else if(_audBehavior === "none") {
+    _filtAudio = [];
+  } else if(_audBehavior === "first") {
+    _filtAudio = sourceInfo.audio.slice(0,1);
+  } else if(_audBehavior === "first_matching") {
+    const m = sourceInfo.audio.find(t=>_matchesLangGlobal(t,_audLangs));
+    _filtAudio = m ? [m] : sourceInfo.audio.slice(0,1);
+  } else {
+    _filtAudio = sourceInfo.audio.filter(t=>_matchesLangGlobal(t,_audLangs));
+    if(!_filtAudio.length) _filtAudio = sourceInfo.audio.slice(0,1);
+  }
+  activeAudioTracks = _filtAudio.map(t=>({...t,encoder:"copy",mixdown:"none",bitrate:320,samplerate:0,gain:0,name:t.title||""}));
+  renderAudioTracks(); renderSummary(); saveSession();
+}
 
 function addAudioTrack(){
   if(!sourceInfo||!sourceInfo.audio.length){hbAlert("Open a source file first");return;}
@@ -2493,7 +2810,12 @@ function renderSubTracks(){
   activeSubTracks.forEach((t,i)=>{
     const row=document.createElement("div");
     row.className="track-row";
-    const srcLabel=`${t.track} - ${t.language||"und"} (${t.codec||"?"})`;
+    const _subLangMap = {"eng":"English","jpn":"Japanese","fre":"French","ger":"German","spa":"Spanish","ita":"Italian","por":"Portuguese","rus":"Russian","chi":"Chinese","kor":"Korean","ara":"Arabic","dut":"Dutch","swe":"Swedish","nor":"Norwegian","dan":"Danish","fin":"Finnish","pol":"Polish","hun":"Hungarian","cze":"Czech","rum":"Romanian","tur":"Turkish","heb":"Hebrew","tha":"Thai","vie":"Vietnamese","ind":"Indonesian","may":"Malay","ukr":"Ukrainian","hrv":"Croatian","gre":"Greek","und":"Unknown","en":"English","ja":"Japanese","fr":"French","de":"German","es":"Spanish","it":"Italian","pt":"Portuguese","ru":"Russian","zh":"Chinese","ko":"Korean","ar":"Arabic","nl":"Dutch"};
+    const _subLangName = _subLangMap[t.language||"und"] || (t.language||"und").toUpperCase();
+    const _subFlags = [t.default?"[default]":"", t.forced?"[forced]":""].filter(Boolean).join(" ");
+    const _subLangTag = t.language && t.language !== "und" ? `[${t.language}]` : "";
+    const _subNamePart = t.title || "";
+    const srcLabel=`${t.track} - ${[_subNamePart, _subLangTag, _subFlags].filter(Boolean).join(" ")}`;
     row.innerHTML=`
       <div class="track-header" onclick="toggleTrackDetail('sub-detail-${i}')">
         <span class="track-expand"><i class="ti ti-chevron-right"></i></span>
@@ -2505,7 +2827,7 @@ function renderSubTracks(){
       </div>
       <div class="track-detail" id="sub-detail-${i}">
         <div class="field-row"><span class="field-label">Name:</span>
-          <input type="text" value="${esc(t.custom_name||t.title||"")}" oninput="activeSubTracks[${i}].custom_name=this.value;renderSubTracks()"></div>
+          <input type="text" value="${esc(t.custom_name!==undefined?t.custom_name:(t.title||""))}" placeholder="(no name)" oninput="activeSubTracks[${i}].custom_name=this.value;renderSubTracks()"></div>
         <div class="field-row"><span class="field-label"></span>
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;flex-wrap:wrap">
             <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" ${t.default?"checked":""} onchange="setDefaultSub(${i})"> Default</label>
@@ -2520,7 +2842,26 @@ function renderSubTracks(){
 function setDefaultSub(idx){ activeSubTracks.forEach((t,i)=>t.default=(i===idx)); renderSubTracks(); }
 function removeSubTrack(i){ activeSubTracks.splice(i,1); renderSubTracks(); renderSummary(); saveSession(); }
 function clearSubTracks(){ activeSubTracks=[]; renderSubTracks(); saveSession(); }
-function reloadSubTracks(){ activeSubTracks=sourceInfo?(sourceInfo.subtitles||[]).map(t=>({...t,custom_name:t.title||"",burn_in:false})):[];renderSubTracks(); }
+function reloadSubTracks(){
+  if(!sourceInfo) return;
+  const _subBehavior = document.getElementById("sub-sel-behavior")?.value || "all";
+  const _subLangs = subSelLangs.map(l=>l.toLowerCase());
+  let _filtSubs;
+  if(_subBehavior === "all") {
+    _filtSubs = sourceInfo.subtitles;
+  } else if(_subBehavior === "none") {
+    _filtSubs = [];
+  } else if(_subBehavior === "first") {
+    _filtSubs = sourceInfo.subtitles.slice(0,1);
+  } else if(_subBehavior === "first_matching") {
+    const m = sourceInfo.subtitles.find(t=>_matchesLangGlobal(t,_subLangs));
+    _filtSubs = m ? [m] : sourceInfo.subtitles.slice(0,1);
+  } else {
+    _filtSubs = sourceInfo.subtitles.filter(t=>_matchesLangGlobal(t,_subLangs));
+  }
+  activeSubTracks = _filtSubs.map(t=>({...t,custom_name:t.title||"",burn_in:false}));
+  renderSubTracks(); renderSummary(); saveSession();
+}
 
 function addSubTrack(){
   if(!sourceInfo||!sourceInfo.subtitles.length){hbAlert("Open a source file first");return;}
@@ -2586,6 +2927,58 @@ function toggleSharpenPreset(){
 }
 
 // ── Presets ────────────────────────────────────────────────────────────────
+// Global language matching helper (mirrors the one inside loadSource)
+const _isoMapGlobal = {
+  "eng":"english","en":"english","jpn":"japanese","jp":"japanese","ja":"japanese",
+  "und":"unknown","fre":"french","fr":"french","ger":"german","de":"german",
+  "spa":"spanish","es":"spanish","ita":"italian","it":"italian",
+  "por":"portuguese","pt":"portuguese","rus":"russian","ru":"russian",
+  "chi":"chinese","zh":"chinese","kor":"korean","ko":"korean",
+  "ara":"arabic","ar":"arabic","dut":"dutch","nl":"dutch",
+  "swe":"swedish","sv":"swedish","nor":"norwegian","no":"norwegian",
+  "dan":"danish","da":"danish","fin":"finnish","fi":"finnish",
+  "pol":"polish","pl":"polish","hun":"hungarian","hu":"hungarian",
+  "cze":"czech","cs":"czech","rum":"romanian","ro":"romanian",
+  "tur":"turkish","tr":"turkish","heb":"hebrew","he":"hebrew",
+  "tha":"thai","th":"thai","vie":"vietnamese","vi":"vietnamese",
+  "ind":"indonesian","id":"indonesian","may":"malay","ms":"malay",
+  "fil":"filipino","ukr":"ukrainian","uk":"ukrainian",
+  "hrv":"croatian","hr":"croatian","gre":"greek","el":"greek","nob":"norwegian"
+};
+function _matchesLangGlobal(t, langs) {
+  const code = (t.language||"und").toLowerCase();
+  const fullName = _isoMapGlobal[code] || code;
+  const langsLower = langs.map(l=>l.toLowerCase());
+  return langsLower.includes("any") || langsLower.includes(code) ||
+         langsLower.includes(fullName) || (langsLower.includes("unknown") && code==="und");
+}
+let _suppressPresetModified = false;
+let _presetAppliedOnce = false;
+let _userHasInteracted = false;
+let _presetSnapshot = null; // snapshot of settings when preset was applied
+
+function _showModified(show){
+  const el = document.getElementById("preset-modified");
+  const elM = document.getElementById("preset-modified-mobile");
+  if(el) el.style.display = show ? "" : "none";
+  if(elM) elM.style.display = show ? "" : "none";
+}
+
+function markPresetModified(){
+  if(_suppressPresetModified) return;
+  if(!_userHasInteracted) return;
+  const hasPreset = document.getElementById("preset-path-label").textContent !== "No preset selected";
+  if(!hasPreset) return;
+  // Compare current settings to preset snapshot
+  if(_presetSnapshot){
+    const current = JSON.stringify(collectSettings());
+    const isModified = current !== _presetSnapshot;
+    _showModified(isModified);
+  } else {
+    _showModified(true);
+  }
+}
+function _onUserInteract(){ _userHasInteracted = true; markPresetModified(); }
 function openPresets(){ loadConfig().then(renderPresetsList); document.getElementById("presets-panel").classList.add("open"); saveSession(); }
 function closePresets(){ document.getElementById("presets-panel").classList.remove("open"); saveSession(); }
 
@@ -2729,7 +3122,7 @@ async function savePrefs(){
     when_done_default:        get("pref-when-done-default"),
     notify_queue_complete:    chk("pref-notify-queue-complete"),
     notify_each_complete:     chk("pref-notify-each-complete"),
-    send_file_to:             get("pref-send-file-to"),
+    send_file_to:             chk("pref-send-file-enabled") ? (get("pref-send-file-to")||"") : "",
     cq_granularity:           parseInt(get("pref-cq-granularity"))||1,
     use_dvdnav:               chk("pref-use-dvdnav"),
     logs_with_movie:          chk("pref-logs-with-movie"),
@@ -2783,8 +3176,9 @@ function deletePresetByIndex(idx){
 function applyPreset(name){
   const p=config.presets.find(x=>x.name===name);
   if(!p){ console.warn("Preset not found:", name, "Available:", config.presets.map(x=>x.name)); return;}
+  _suppressPresetModified = true;
   currentPreset=p;
-  document.getElementById("preset-path-label").textContent=`Custom > ${p.category||"My Presets"} > ${p.name}`;
+  document.getElementById("preset-path-label").textContent=`Custom > ${p.name}`;
   document.getElementById("preset-modified").style.display="none";
   const s=p.settings||{};
 
@@ -2837,8 +3231,12 @@ function applyPreset(name){
   setChk("chapter-markers", s.chapter_markers);
 
   // ── Audio selection behavior ──
-  if(s.audio_language_list && s.audio_language_list.length){
-    // Move selected languages from available to selected list
+  if(s.aud_sel_langs && s.aud_sel_langs.length){
+    audSelLangs = [...s.aud_sel_langs];
+    audAvailLangs = ALL_LANGUAGES.filter(l => !audSelLangs.includes(l));
+    renderLangList("aud-avail-langs", audAvailLangs, "aud", "avail");
+    renderLangList("aud-sel-langs",   audSelLangs,   "aud", "sel");
+  } else if(s.audio_language_list && s.audio_language_list.length){
     const langNames = s.audio_language_list.map(code => _langCodeToName(code));
     audSelLangs = langNames.filter(l => l);
     audAvailLangs = ALL_LANGUAGES.filter(l => !audSelLangs.includes(l));
@@ -2859,7 +3257,12 @@ function applyPreset(name){
   if(s.default_audio_mixdown) setVal("aud-default-mixdown", s.default_audio_mixdown);
 
   // ── Subtitle selection behavior ──
-  if(s.sub_language_list && s.sub_language_list.length){
+  if(s.sub_sel_langs && s.sub_sel_langs.length){
+    subSelLangs = [...s.sub_sel_langs];
+    subAvailLangs = ALL_LANGUAGES.filter(l => !subSelLangs.includes(l));
+    renderLangList("sub-avail-langs", subAvailLangs, "sub", "avail");
+    renderLangList("sub-sel-langs",   subSelLangs,   "sub", "sel");
+  } else if(s.sub_language_list && s.sub_language_list.length){
     const langNames = s.sub_language_list.map(code => _langCodeToName(code));
     subSelLangs = langNames.filter(l => l);
     subAvailLangs = ALL_LANGUAGES.filter(l => !subSelLangs.includes(l));
@@ -2874,13 +3277,37 @@ function applyPreset(name){
   setChk("sub-add-if-not-matching", s.sub_add_if_not_match);
   setChk("sub-closed-captions", s.sub_closed_captions);
   setChk("sub-pt-names", s.sub_name_passthru);
+  setVal("sub-preferred-lang", s.sub_preferred_lang || "any");
+  _applySubPreferredLangOrder();
 
   closePresets();
   renderSummary();
+  _suppressPresetModified = false;
   saveSession();
+  const _pmM = document.getElementById("preset-modified-mobile");
+  if(_pmM) _pmM.style.display="none";
+  document.getElementById("preset-modified").style.display="none";
+  _presetAppliedOnce = false;
+  _userHasInteracted = false;
+  setTimeout(()=>{
+    _presetAppliedOnce = true;
+    _presetSnapshot = JSON.stringify(collectSettings());
+  }, 500);
 }
 
 // Language code to display name mapping
+function _applySubPreferredLangOrder(){
+  const code = document.getElementById("sub-preferred-lang")?.value || "any";
+  if(code === "any") return;
+  const name = _langCodeToName(code);
+  const idx = subSelLangs.indexOf(name);
+  if(idx > 0){
+    subSelLangs.splice(idx, 1);
+    subSelLangs.unshift(name);
+    renderLangList("sub-sel-langs", subSelLangs, "sub", "sel");
+  }
+}
+
 function _langCodeToName(code){
   const map={
     "eng":"English","jpn":"Japanese","fre":"French","fra":"French",
@@ -2896,15 +3323,75 @@ function _langCodeToName(code){
   return map[code] || code;
 }
 
-function deletePreset(name){
-  config.presets=config.presets.filter(p=>p.name!==name);
+function setDefaultPreset(name){
+  config.defaultPreset = (config.defaultPreset === name) ? null : name;
   saveConfigToServer();
   renderPresetsList();
 }
 
-function saveNewPreset(){
-  document.getElementById("new-preset-name").value="";
-  openModal("save-preset-modal");
+function deletePreset(name){
+  const wasActive = currentPreset?.name === name;
+  config.presets=config.presets.filter(p=>p.name!==name);
+  if(wasActive){
+    currentPreset = null;
+    const fallback = config.defaultPreset && config.presets.find(p=>p.name===config.defaultPreset);
+    if(fallback) applyPreset(fallback.name);
+    else document.getElementById("preset-path-label").textContent = "No preset selected";
+  }
+  saveConfigToServer();
+  renderPresetsList();
+}
+
+async function saveNewPreset(){
+  const name = await hbPrompt("Preset name:", "");
+  if(!name) return;
+  const settings = collectSettings();
+  config.presets = config.presets.filter(p=>p.name!==name);
+  config.presets.push({name, category:"My Presets", settings});
+  currentPreset = {name, category:"My Presets", settings};
+  saveConfigToServer();
+  document.getElementById("preset-path-label").textContent = `My Presets > ${name}`;
+  _presetSnapshot = JSON.stringify(settings);
+  _showModified(false);
+  renderPresetsList();
+}
+
+async function saveCurrentPreset(){
+  if(currentPreset){
+    // 3-button dialog: Cancel | Save as New Preset | Overwrite
+    const result = await new Promise(resolve => {
+      document.getElementById("hb-dialog-title").textContent = "Overwrite Preset?";
+      document.getElementById("hb-dialog-msg").textContent = `Save changes to "${currentPreset.name}"?`;
+      const actions = document.getElementById("hb-dialog-actions");
+      actions.innerHTML = "";
+      const cancel = document.createElement("button");
+      cancel.className = "btn-cancel"; cancel.textContent = "Cancel";
+      cancel.onclick = () => { document.getElementById("hb-dialog").classList.remove("open"); resolve("cancel"); };
+      const asNew = document.createElement("button");
+      asNew.className = "btn-sm"; asNew.textContent = "Save as New Preset";
+      asNew.style.cssText = "padding:6px 12px;";
+      asNew.onclick = () => { document.getElementById("hb-dialog").classList.remove("open"); resolve("new"); };
+      const overwrite = document.createElement("button");
+      overwrite.className = "btn-primary"; overwrite.textContent = "Overwrite";
+      overwrite.onclick = () => { document.getElementById("hb-dialog").classList.remove("open"); resolve("overwrite"); };
+      actions.appendChild(cancel);
+      actions.appendChild(asNew);
+      actions.appendChild(overwrite);
+      document.getElementById("hb-dialog").classList.add("open");
+    });
+    if(result === "cancel") return;
+    if(result === "new"){ saveNewPreset(); return; }
+    const settings = collectSettings();
+    const idx = config.presets.findIndex(p=>p.name===currentPreset.name);
+    if(idx>=0) config.presets[idx].settings = settings;
+    else config.presets.push({name:currentPreset.name, category:currentPreset.category||"My Presets", settings});
+    saveConfigToServer();
+    _presetSnapshot = JSON.stringify(settings);
+    _showModified(false);
+    renderPresetsList();
+  } else {
+    saveNewPreset();
+  }
 }
 
 async function presetMenuAction(action){
@@ -2955,21 +3442,16 @@ async function presetMenuAction(action){
 }
 
 function reloadPreset(){
-  if(currentPreset) applyPreset(currentPreset.name);
+  if(!currentPreset){ hbAlert("No preset selected"); return; }
+  applyPreset(currentPreset.name);
+  // Re-apply track filtering after preset settings are applied
+  if(sourceInfo) {
+    reloadAudioTracks();
+    reloadSubTracks();
+  }
+  document.getElementById("preset-modified").style.display = "none";
 }
 
-function confirmSavePreset(){
-  const name=document.getElementById("new-preset-name").value.trim();
-  const cat=document.getElementById("new-preset-cat").value.trim()||"My Presets";
-  if(!name){hbAlert("Enter a name");return;}
-  const settings=collectSettings();
-  config.presets=config.presets.filter(p=>p.name!==name);
-  config.presets.push({name,category:cat,settings});
-  saveConfigToServer();
-  document.getElementById("preset-path").textContent=`Custom > ${cat} > ${name}`;
-  closeModal("save-preset-modal");
-  renderPresetsList();
-}
 
 // ── Collect all settings ───────────────────────────────────────────────────
 function collectSettings(){
@@ -3031,6 +3513,29 @@ function collectSettings(){
     "pt-vorbis": document.getElementById("pt-vorbis")?.checked ?? true,
     "pt-opus":   document.getElementById("pt-opus")?.checked ?? true,
     "pt-pcm":    document.getElementById("pt-pcm")?.checked ?? true,
+    // Audio selection behavior
+    audio_sel_behavior:     document.getElementById("aud-sel-behavior")?.value || "",
+    audio_default_encoder:  document.getElementById("aud-default-encoder")?.value || "",
+    audio_default_bitrate:  document.getElementById("aud-default-bitrate")?.value || "",
+    audio_default_mixdown:  document.getElementById("aud-default-mixdown")?.value || "",
+    audio_default_samplerate: document.getElementById("aud-default-samplerate")?.value || "",
+    audio_fallback:         document.getElementById("pt-fallback")?.value || "",
+    audio_autonaming:       document.getElementById("aud-autonaming")?.value || "",
+    audio_name_passthru:    document.getElementById("pt-track-names")?.checked ?? true,
+    audio_first_encoder_only: document.getElementById("aud-first-encoder-only")?.checked ?? true,
+    // Subtitle selection behavior
+    sub_sel_behavior:        document.getElementById("sub-sel-behavior")?.value || "",
+    sub_burn_behavior:       document.getElementById("sub-burnin-behavior")?.value || "",
+    sub_foreign_scan:        document.getElementById("sub-foreign-scan")?.checked ?? false,
+    sub_add_if_not_match:    document.getElementById("sub-add-if-not-matching")?.checked ?? false,
+    sub_closed_captions:     document.getElementById("sub-closed-captions")?.checked ?? false,
+    sub_name_passthru:       document.getElementById("sub-pt-names")?.checked ?? true,
+    sub_burn_dvd:            document.getElementById("sub-burnin-dvd")?.checked ?? false,
+    sub_burn_bluray:         document.getElementById("sub-burnin-bluray")?.checked ?? false,
+    sub_preferred_lang:      document.getElementById("sub-preferred-lang")?.value || "any",
+    // Language selections
+    aud_sel_langs:           [...audSelLangs],
+    sub_sel_langs:           [...subSelLangs],
   };
 }
 
@@ -3060,6 +3565,9 @@ async function addToQueue(){
     ...settings,
     input_file: sourceFile,
     save_as: document.getElementById("save-as-footer").value,
+    source_fps: sourceInfo?.video?.fps || "",
+    source_width: sourceInfo?.video?.width || 0,
+    source_height: sourceInfo?.video?.height || 0,
     audio_tracks: audioTracks,
     subtitle_tracks: subTracks,
     tag_title: document.getElementById("tag-title").value,
@@ -3194,7 +3702,6 @@ async function queueAction(action){
     for(const j of failed) await fetch(SERVER+"/api/jobs/"+j.id+"/reset",{method:"POST"});
     pollJobs();
   } else if(action==="resetAll"){
-    if(!await hbConfirm("Reset all jobs to queued?")) return;
     for(const j of jobs){
       if(j.status==="encoding"||j.status==="paused"){
         await fetch(SERVER+"/api/jobs/"+j.id+"/cancel",{method:"POST"});
@@ -3207,9 +3714,12 @@ async function queueAction(action){
     for(const j of done) await fetch(SERVER+"/api/jobs/"+j.id,{method:"DELETE"});
     pollJobs();
   } else if(action==="clearAll"){
-    if(!await hbConfirm("Clear all jobs from queue?")) return;
     for(const j of jobs) await fetch(SERVER+"/api/jobs/"+j.id,{method:"DELETE"});
-    selectedJobId=null; pollJobs();
+    selectedJobId=null;
+    const _qs=document.getElementById("qtab-summary"); if(_qs) _qs.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3)">Select a job to view details</div>';
+    const _qst=document.getElementById("qtab-statistics"); if(_qst) _qst.innerHTML='';
+    const _qa=document.getElementById("qtab-activity"); if(_qa) _qa.innerHTML='';
+    pollJobs();
   } else if(action==="export"){
     const data = JSON.stringify(jobs.map(j=>j.params||{}), null, 2);
     const a = document.createElement("a");
@@ -3367,6 +3877,11 @@ async function pollJobs(){
       if(wasEncoding && !nowEncoding && allDone && currentPrefs?.notify_queue_complete){
         sendNotification("Queue Complete", "All encodes have finished.");
       }
+      if(wasEncoding && !nowEncoding && allDone){
+        const action = currentPrefs?.when_done_default || "Do Nothing";
+        if(action === "Sleep") fetch(SERVER+"/api/system/sleep", {method:"POST"}).catch(()=>{});
+        else if(action === "Shutdown") fetch(SERVER+"/api/system/shutdown", {method:"POST"}).catch(()=>{});
+      }
     }
     _prevJobStates = {};
     newJobs.forEach(j=>{ _prevJobStates[j.id]=j.status; });
@@ -3429,11 +3944,15 @@ function showJobDetail(job){
   const encNames={h265:"H.265 (x265)",h265_10bit:"H.265 10-bit (x265)",h264:"H.264 (x264)",h264_10bit:"H.264 10-bit",av1:"AV1 (SVT)",av1_10bit:"AV1 10-bit",vp9:"VP9",h265_nvenc:"H.265 (NVENC)",h264_nvenc:"H.264 (NVENC)",h265_qsv:"H.265 (QSV)",h264_qsv:"H.264 (QSV)"};
   const encLabel=encNames[p.video_encoder]||p.video_encoder||"H.265";
   const qualStr=p.quality_mode==="cq"?`Constant Quality ${p.rf||22}(RF)`:`Avg Bitrate ${p.bitrate||0}kbps`;
-  const presetStr=p.encoder_preset?`, Preset ${p.encoder_preset}`:"";
-  const tuneStr=p.tune&&p.tune!=="none"?`, Tune ${p.tune}`:"";
-  const profileStr=p.profile&&p.profile!=="auto"?`, Profile ${p.profile}`:"";
-  const levelStr=p.level&&p.level!=="auto"?`, Level ${p.level}`:"";
-  const fpsStr=p.framerate&&p.framerate!=="same"?`${p.framerate} fps`:"Same as source fps";
+  const presetParts=[
+    p.encoder_preset?`Preset ${p.encoder_preset}`:"",
+    p.tune&&p.tune!=="none"?`Tune ${p.tune}`:"",
+    p.profile&&p.profile!=="auto"?`Profile ${p.profile}`:"",
+    p.level&&p.level!=="auto"?`Level ${p.level}`:"",
+  ].filter(Boolean);
+  const presetLine=presetParts.join(", ");
+  const srcFps=p.source_fps||"";
+  const fpsStr=p.framerate&&p.framerate!=="same"?`${p.framerate} fps`:srcFps?`${srcFps} fps`:"Same as source fps";
   const frModeStr=p.framerate_mode==="cfr"?"Constant Framerate":p.framerate_mode==="vfr"?"Variable Framerate":"Peak Framerate";
 
   // Filters line
@@ -3448,19 +3967,30 @@ function showJobDetail(job){
   if(p.grayscale) filterParts.push("Grayscale");
 
   // Dimensions
-  const resStr=p.resolution_limit?`Resolution limit: ${p.resolution_limit}`:"";
-  const cropStr=p.cropping&&p.cropping!=="none"?p.cropping==="custom"?`Custom crop ${p.crop_top||0}:${p.crop_bottom||0}:${p.crop_left||0}:${p.crop_right||0}`:"Auto crop":"No crop";
-  const anamStr=p.anamorphic?`${p.anamorphic} anamorphic`:"";
+  const cropStr=p.cropping==="custom"
+    ?`${p.crop_top||0}:${p.crop_bottom||0}:${p.crop_left||0}:${p.crop_right||0} Crop`
+    :"0:0:0:0 Crop";
+  const sw=p.source_width||0, sh=p.source_height||0;
+  const _gcd=(a,b)=>b?_gcd(b,a%b):a;
+  const storageStr=sw&&sh?`${sw}x${sh} storage, ${sw}x${sh} display`:"";
+  const parStr=sw&&sh?"1:1 Pixel Aspect Ratio":"";
+  const darStr=sw&&sh?(()=>{const g=_gcd(sw,sh);return `${sw/g}:${sh/g} Display Aspect Ratio`;})():"";
 
   // Audio tracks
   const audioTracks=p.audio_tracks||[];
+  const _qAudLangMap={"eng":"English","jpn":"Japanese","fre":"French","ger":"German","spa":"Spanish","ita":"Italian","por":"Portuguese","rus":"Russian","chi":"Chinese","kor":"Korean","ara":"Arabic","dut":"Dutch","und":"Unknown","en":"English","ja":"Japanese","fr":"French","de":"German","es":"Spanish"};
   const audioLines=audioTracks.length
     ?audioTracks.map(t=>{
-        const lang=t.language&&t.language!=="und"?t.language.toUpperCase():(t.title||`Track ${t.track||"?"}`);
-        const codec=t.codec?` (${t.codec.toUpperCase()})`:"";
-        const mix=t.mixdown&&t.mixdown!=="none"?t.mixdown.charAt(0).toUpperCase()+t.mixdown.slice(1):"Stereo";
-        const enc=!t.encoder||t.encoder==="copy"?"Passthru":`${t.encoder.replace("av_","").replace("copy:","").toUpperCase()} Passthru`;
-        return `${mix}${codec} - ${lang}, ${enc}`;
+        const langName=_qAudLangMap[t.language||"und"]||(t.language||"und").toUpperCase();
+        const langTag=t.language&&t.language!=="und"?` [${t.language}]`:"";
+        const codec=(t.codec||"?").toUpperCase();
+        const ch=t.channel_layout?`${t.channel_layout}ch`:(t.channels?`${t.channels}ch`:"");
+        const br=t.src_bitrate&&t.src_bitrate>0?`${t.src_bitrate}kbps`:(t.bitrate&&t.bitrate>0?`${t.bitrate}kbps`:"");
+        const hz=t.src_samplerate?`${Math.round(t.src_samplerate/1000)}kHz`:"";
+        const specs=[codec,ch,br,hz].filter(Boolean).join(", ");
+        const enc=!t.encoder||t.encoder==="copy"?"Passthru":t.encoder.replace("av_","").replace("copy:","").toUpperCase();
+        const name=t.name||langName;
+        return `${t.track||""} - ${name}${langTag} (${specs}) → ${enc}`;
       }).join("<br>")
     :"No audio tracks added";
 
@@ -3468,10 +3998,12 @@ function showJobDetail(job){
   const subTracks=p.subtitle_tracks||[];
   const subLines=subTracks.length
     ?subTracks.map(t=>{
-        const lang=t.language&&t.language!=="und"?t.language.toUpperCase():"";
-        const codec=t.codec?` (${t.codec.toUpperCase()})`:"";
-        const flags=[t.forced?"Forced":"",t.burn_in?"Burn-in":"",t.default?"Default":""].filter(Boolean).join(", ");
-        return `${lang}${codec}${flags?" — "+flags:""}`;
+        const name=t.custom_name||t.title||"";
+        const langTag=t.language&&t.language!=="und"?`[${t.language}]`:"";
+        const codec=(t.codec||"").toUpperCase();
+        const flags=[t.default?"Default":"",t.forced?"Forced":"",t.burn_in?"Burn In":""].filter(Boolean).join(" · ");
+        const label=[name,langTag].filter(Boolean).join(" ");
+        return `${label} (${codec})${flags?" — "+flags:""}`;
       }).join("<br>")
     :"None";
 
@@ -3518,8 +4050,8 @@ function showJobDetail(job){
         <div class="q-detail-row"><span class="q-detail-key">Preset:</span><span class="q-detail-val">${esc(job.preset||"Custom")}</span></div>
         <div class="q-detail-row"><span class="q-detail-key">Source:</span><span class="q-detail-val">${esc(job.input_file||"")}</span></div>
         <div class="q-detail-row"><span class="q-detail-key">Destination:</span><span class="q-detail-val">${esc(destDisplay)}<br>${container} (avformat)${p.chapter_markers!==false?"<br>Chapter Markers":""}</span></div>
-        <div class="q-detail-row"><span class="q-detail-key">Dimensions:</span><span class="q-detail-val">${cropStr}<br>${resStr?resStr+"<br>":""}${anamStr}</span></div>
-        <div class="q-detail-row"><span class="q-detail-key">Video:</span><span class="q-detail-val">${encLabel}, ${qualStr}<br>Preset${presetStr}${tuneStr}${profileStr}${levelStr}<br>${frModeStr} ${fpsStr}${filterParts.length?"<br>"+filterParts.join(", "):""}</span></div>
+        <div class="q-detail-row"><span class="q-detail-key">Dimensions:</span><span class="q-detail-val">${cropStr}${storageStr?"<br>"+storageStr:""}${parStr?"<br>"+parStr:""}${darStr?"<br>"+darStr:""}</span></div>
+        <div class="q-detail-row"><span class="q-detail-key">Video:</span><span class="q-detail-val">${encLabel}, ${qualStr}${presetLine?"<br>"+presetLine:""}<br>${frModeStr} ${fpsStr}${filterParts.length?"<br>"+filterParts.join(", "):""}</span></div>
         <div class="q-detail-row"><span class="q-detail-key">Audio:</span><span class="q-detail-val">${audioLines}</span></div>
         <div class="q-detail-row"><span class="q-detail-key">Subtitles:</span><span class="q-detail-val">${subLines}</span></div>
       </div>
@@ -3539,6 +4071,16 @@ async function deleteJob(id){
 
 // ── Locations ──────────────────────────────────────────────────────────────
 function addLocation(){ openModal("add-location-modal"); }
+async function saveCurrentAsFavourite(){
+  if(!currentBrowsePath){ hbAlert("Navigate to a folder first."); return; }
+  const name = currentBrowsePath.split("/").filter(Boolean).pop() || currentBrowsePath;
+  if(config.locations.find(l=>l.path===currentBrowsePath)){ hbAlert(`"${name}" is already a favourite.`); return; }
+  config.locations.push({name, path:currentBrowsePath});
+  await saveConfigToServer();
+  renderSidebar();
+  const toast = document.getElementById("fav-saved-toast");
+  if(toast){ toast.textContent="Saved!"; toast.style.display="block"; toast.style.opacity="1"; setTimeout(()=>{ toast.style.opacity="0"; setTimeout(()=>{ toast.style.display="none"; },400); },1500); }
+}
 async function confirmAddLocation(){
   const name=document.getElementById("new-loc-name").value.trim();
   const path=document.getElementById("new-loc-path").value.trim();
@@ -3611,6 +4153,10 @@ function langMove(prefix, fromSide, toSide){
   if(idx>=0){ fromArr.splice(idx,1); toArr.push(lang); }
   renderLangList(fromId, fromArr, prefix, fromSide);
   renderLangList(toId,   toArr,   prefix, toSide);
+  saveSession();
+  _userHasInteracted = true;
+  const _lbl = document.getElementById("preset-path-label")?.textContent||"";
+  if(_lbl && _lbl !== "No preset selected") _showModified(true);
 }
 
 // ── Preview ───────────────────────────────────────────────────────────────
@@ -3771,32 +4317,18 @@ function renderSidebarWithCtx(){
   config.locations.forEach((loc,i)=>{
     const item = document.createElement("div");
     item.className = "sidebar-item";
-    item.innerHTML = `<i class="ti ti-device-desktop"></i><span style="flex:1">${esc(loc.name)}</span>`;
+    item.style.padding = "4px 8px";
+    item.style.margin = "2px";
+    item.style.border = "1px solid var(--border2)";
+    item.style.borderRadius = "6px";
+    item.style.background = "var(--surface2)";
+    item.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(loc.name)}</span><button class="icon-btn" style="border:none;flex-shrink:0;width:20px;height:20px;font-size:12px;color:var(--text3)" title="Rename" onclick="event.stopPropagation();editLocationName(${i})"><i class="ti ti-pencil"></i></button><button class="icon-btn" style="border:none;flex-shrink:0;width:20px;height:20px;font-size:12px;color:var(--red)" title="Remove" onclick="event.stopPropagation();deleteLocation(${i})"><i class="ti ti-trash"></i></button>`;
     item.onclick = ()=>{
       document.querySelectorAll(".sidebar-item").forEach(x=>x.classList.remove("active"));
       item.classList.add("active");
       browseLocation(loc.path);
     };
-    item.addEventListener("contextmenu", e=>{
-      e.preventDefault();
-      ctxLocationIndex = i;
-      const menu = document.getElementById("ctx-menu");
-      menu.style.display = "block";
-      menu.style.left = e.clientX + "px";
-      menu.style.top  = e.clientY + "px";
-    });
-    // Long-press for mobile
-    let pressTimer;
-    item.addEventListener("touchstart", e=>{
-      pressTimer = setTimeout(()=>{
-        ctxLocationIndex = i;
-        const menu = document.getElementById("ctx-menu");
-        menu.style.display = "block";
-        menu.style.left = e.touches[0].clientX + "px";
-        menu.style.top  = e.touches[0].clientY + "px";
-      }, 600);
-    });
-    item.addEventListener("touchend", ()=>clearTimeout(pressTimer));
+    item.addEventListener("contextmenu", e=>{ e.preventDefault(); });
     el.appendChild(item);
   });
 }
@@ -3807,6 +4339,31 @@ window.renderSidebar = renderSidebarWithCtx;
 document.addEventListener("click", ()=>{
   document.getElementById("ctx-menu").style.display = "none";
 });
+
+let _editingLocationIndex = -1;
+function editLocationName(i){
+  const loc = config.locations[i];
+  if(!loc) return;
+  _editingLocationIndex = i;
+  document.getElementById("rename-loc-name").value = loc.name;
+  openModal("rename-location-modal");
+  setTimeout(()=>document.getElementById("rename-loc-name").focus(), 50);
+}
+async function confirmRenameLocation(){
+  const trimmed = document.getElementById("rename-loc-name").value.trim();
+  if(!trimmed){ hbAlert("Name cannot be empty."); return; }
+  config.locations[_editingLocationIndex].name = trimmed;
+  await saveConfigToServer();
+  closeModal("rename-location-modal");
+  renderSidebar();
+  if(document.getElementById("sidebar-favourites")?.classList.contains("active")) browseFavourites();
+}
+async function deleteLocation(i){
+  config.locations.splice(i, 1);
+  await saveConfigToServer();
+  renderSidebar();
+  if(document.getElementById("sidebar-favourites")?.classList.contains("active")) browseFavourites();
+}
 
 function ctxRemoveLocation(){
   if(ctxLocationIndex < 0) return;
@@ -4004,8 +4561,43 @@ function renderPresetsListWithOfficial(){
       config.presets.forEach(p=>{
         const item = document.createElement("div");
         item.className = "preset-item";
-        item.innerHTML = `<span class="preset-name">${esc(p.name)}</span><div class="preset-actions"><button class="btn-icon" onclick="event.stopPropagation();deletePreset('${esc(p.name)}')" title="Delete"><i class="ti ti-trash"></i></button></div>`;
         item.onclick = ()=> applyPreset(p.name);
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "preset-name";
+        nameSpan.textContent = p.name;
+        item.appendChild(nameSpan);
+
+        const actions = document.createElement("div");
+        actions.className = "preset-actions";
+
+        const isDefault = config.defaultPreset === p.name;
+        const hasDefault = !!config.defaultPreset;
+        const showStar = isDefault || !hasDefault;
+
+        if(showStar){
+          const starBtn = document.createElement("button");
+          starBtn.className = "btn-icon";
+          starBtn.title = isDefault ? "Default preset" : "Set as default";
+          starBtn.style.cssText = "border:none;background:transparent;";
+          starBtn.style.color = isDefault ? "#f5c518" : "#bbb";
+          const starIcon = document.createElement("span");
+          starIcon.style.cssText = "line-height:1;display:block;";
+          starIcon.textContent = "★";
+          starBtn.appendChild(starIcon);
+          starBtn.onclick = e => { e.stopPropagation(); setDefaultPreset(p.name); };
+          actions.appendChild(starBtn);
+        }
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-icon";
+        delBtn.title = "Delete";
+        delBtn.style.cssText = "border:none;background:transparent;";
+        delBtn.innerHTML = `<i class="ti ti-trash"></i>`;
+        delBtn.onclick = e => { e.stopPropagation(); deletePreset(p.name); };
+        actions.appendChild(delBtn);
+
+        item.appendChild(actions);
         el.appendChild(item);
       });
     }
@@ -4122,6 +4714,8 @@ const PERSIST_RADIOS = ["q-mode","fr-mode"];
 // so a refresh restores exactly where you left off, like the jlesage desktop app.
 
 function saveSession(){
+  if(loadSource._restoring) return; // Don't save during session restore
+  markPresetModified();
   const state = {
     // Source file
     sourceFile: sourceFile || "",
@@ -4133,16 +4727,17 @@ function saveSession(){
     subTracks:    JSON.stringify(activeSubTracks),
     // UI state
     presetLabel:  document.getElementById("preset-path-label")?.textContent || "",
+    presetName:   currentPreset?.name || "",
     saveAs:       document.getElementById("save-as-footer")?.value || "",
     outputFolder: outputFolder || "",
     toPathLabel:  document.getElementById("to-path-label-footer")?.textContent || "",
     whenDone:     document.getElementById("when-done-footer")?.value || "",
     rfVal:        document.getElementById("rf-val")?.textContent || "",
     // UI panel state
-    queueOpen:    document.getElementById("queue-panel")?.classList.contains("open") || false,
-    presetsOpen:  document.getElementById("presets-panel")?.classList.contains("open") || false,
-    activityOpen: document.getElementById("activity-panel")?.classList.contains("open") || false,
-    prefsOpen:    document.getElementById("prefs-panel")?.classList.contains("open") || false,
+    queueOpen:    false,
+    presetsOpen:  false,
+    activityOpen: false,
+    prefsOpen:    false,
     prefsTab:     document.querySelector(".prefs-tab.active")?.textContent?.trim() || "General",
     activeTab:    document.querySelector(".tab.active")?.getAttribute("onclick")?.match(/showTab\('(\w+)'/)?.[1] || "summary",
     // Language selections
@@ -4151,7 +4746,8 @@ function saveSession(){
     // Selection behavior
     audSelBehavior:   document.getElementById("aud-sel-behavior")?.value || "",
     subSelBehavior:   document.getElementById("sub-sel-behavior")?.value || "",
-    subBurninBehavior:document.getElementById("sub-burnin-behavior")?.value || "",
+    subBurninBehavior:  document.getElementById("sub-burnin-behavior")?.value || "",
+    subPreferredLang:   document.getElementById("sub-preferred-lang")?.value || "any",
   };
   // Collect all form values
   PERSIST_KEYS.forEach(id=>{
@@ -4186,6 +4782,11 @@ async function restoreSession(){
       if(!state || state.error) return;
     }catch{ return; }
 
+  // Show Ready immediately if session has a source file (before loadSource completes)
+  if(state.sourceFile){
+    document.querySelectorAll(".status-text-el").forEach(el=>el.textContent="Ready");
+  }
+
   // Restore form values first (instant, no network)
   const s = state.settings || {};
   PERSIST_KEYS.forEach(id=>{
@@ -4204,9 +4805,40 @@ async function restoreSession(){
   });
 
   // Restore UI labels
-  if(state.presetLabel)  document.getElementById("preset-path-label").textContent = state.presetLabel;
-  if(state.saveAs)       document.getElementById("save-as-footer").value = state.saveAs;
-  if(state.toPathLabel)  document.getElementById("to-path-label-footer").textContent = state.toPathLabel;
+  if(state.presetLabel){
+    // Fix legacy labels that had 3 parts e.g. "Custom > Cat > Name" -> "Custom > Name"
+    let _lbl = state.presetLabel;
+    const _parts = _lbl.split(" > ");
+    if(_parts.length === 3) _lbl = `${_parts[0]} > ${_parts[2]}`;
+    document.getElementById("preset-path-label").textContent = _lbl;
+  }
+  if(state.presetName) {
+    // Config may not be loaded yet — try now and also retry after config loads
+    const _tryRestorePreset = () => {
+      if(config.presets) {
+        const p = config.presets.find(x=>x.name===state.presetName);
+        if(p) {
+          currentPreset = p;
+          // Allow markPresetModified to work after session restore
+          _presetAppliedOnce = true;
+          setTimeout(()=>{ _presetSnapshot = JSON.stringify(collectSettings()); }, 600);
+        }
+      }
+    };
+    _tryRestorePreset();
+    // Also retry after config loads in case it wasn't ready yet
+    loadConfig().then(_tryRestorePreset).catch(()=>{});
+  }
+  if(state.saveAs) {
+    document.getElementById("save-as-footer").value = state.saveAs;
+    const mob = document.getElementById("save-as-mobile");
+    if(mob){ if(mob.contentEditable==="true") mob.textContent = state.saveAs||""; else mob.value !== undefined ? mob.value = state.saveAs||"" : mob.textContent = state.saveAs||"Save As..."; }
+    const mobLabel = document.getElementById("to-path-label-mobile");
+    if(state.toPathLabel && mobLabel) mobLabel.textContent = state.toPathLabel;
+  }
+  if(state.toPathLabel && state.toPathLabel !== " Select output") {
+    document.getElementById("to-path-label-footer").textContent = state.toPathLabel;
+  }
   if(state.outputFolder) outputFolder = state.outputFolder;
   if(state.whenDone)     { const el=document.getElementById("when-done-footer"); if(el) el.value=state.whenDone; }
   if(state.rfVal)        document.getElementById("rf-val").textContent = state.rfVal;
@@ -4229,6 +4861,7 @@ async function restoreSession(){
   if(state.audSelBehavior)    { const el=document.getElementById("aud-sel-behavior"); if(el) el.value=state.audSelBehavior; }
   if(state.subSelBehavior)    { const el=document.getElementById("sub-sel-behavior"); if(el) el.value=state.subSelBehavior; }
   if(state.subBurninBehavior) { const el=document.getElementById("sub-burnin-behavior"); if(el) el.value=state.subBurninBehavior; }
+  if(state.subPreferredLang)  { const el=document.getElementById("sub-preferred-lang");  if(el) el.value=state.subPreferredLang; _applySubPreferredLangOrder(); }
 
   // Restore derived UI state
   updatePresetLabel();
@@ -4359,7 +4992,30 @@ async function restoreSession(){
   }
   }finally{
     loadSource._restoring = false;
+    saveSession(); // Save after restore so state persists on refresh
   }
+}
+
+function setupMobileTrackToolbars(){
+  if(window.innerWidth > 600) return;
+  ['panel-audio','panel-subtitles'].forEach(panelId=>{
+    const toolbar = document.querySelector('#'+panelId+' .track-toolbar');
+    if(!toolbar) return;
+    const brk  = toolbar.querySelector('.track-break');
+    const acts = toolbar.querySelector('.track-btn-actions');
+    if(!brk||!acts) return;
+    brk.style.cssText  = 'display:block;width:100%;height:0;flex-shrink:0;';
+    acts.style.cssText = 'display:flex;gap:6px;width:100%;margin-left:0;';
+    toolbar.querySelectorAll('.track-btn-add,.track-btn-sel,.track-btn-reload').forEach(btn=>{
+      btn.style.flexGrow = '1';
+      btn.style.whiteSpace = 'nowrap';
+      btn.style.justifyContent = 'center';
+    });
+    acts.querySelectorAll('.btn-track').forEach(btn=>{
+      btn.style.flex = '1';
+      btn.style.justifyContent = 'center';
+    });
+  });
 }
 
 // Auto-save whenever anything changes
@@ -4368,8 +5024,35 @@ function setupAutoSave(){
     "save-as-footer","when-done-footer","aud-sel-behavior","sub-sel-behavior","sub-burnin-behavior"];
   allIds.forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.addEventListener("change", saveSession);
+    if(el) {
+      el.addEventListener("change", saveSession);
+      el.addEventListener("change", _onUserInteract);
+      el.addEventListener("input", _onUserInteract);
+      if(id === "save-as-footer") {
+        el.addEventListener("input", saveSession);
+        el.addEventListener("input", ()=>{
+          const mob = document.getElementById("save-as-mobile");
+          if(mob){ if(mob.contentEditable==="true") mob.textContent = el.value; else mob.value !== undefined ? mob.value = el.value : mob.textContent = el.value || "Save As..."; }
+        });
+      }
+    }
   });
+  // Also mark interaction on slider input
+  const rfSlider = document.getElementById("rf-slider");
+  if(rfSlider) rfSlider.addEventListener("input", _onUserInteract);
+  // Audio/sub behavior changes should trigger Modified
+  ["aud-sel-behavior","sub-sel-behavior","sub-burnin-behavior",
+   "aud-default-encoder","aud-default-bitrate","aud-default-mixdown","aud-default-samplerate",
+   "pt-fallback","aud-autonaming",
+   "pt-mp2","pt-mp3","pt-ac3","pt-eac3","pt-dts","pt-dtshd","pt-truehd","pt-alac","pt-flac","pt-aac","pt-vorbis","pt-opus","pt-pcm",
+   "pt-track-names","aud-first-encoder-only",
+   "sub-foreign-scan","sub-add-if-not-matching","sub-closed-captions","sub-pt-names",
+   "sub-burnin-dvd","sub-burnin-bluray","sub-preferred-lang"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener("change", ()=>{ _onUserInteract(); markPresetModified(); });
+  });
+  const _subPrefLangEl = document.getElementById("sub-preferred-lang");
+  if(_subPrefLangEl) _subPrefLangEl.addEventListener("change", _applySubPreferredLangOrder);
   PERSIST_RADIOS.forEach(name=>{
     document.querySelectorAll(`input[name="${name}"]`).forEach(el=>{
       el.addEventListener("change", saveSession);
@@ -4388,11 +5071,31 @@ function revealApp(){
   });
 }
 
+// Re-sync session when tab becomes visible (e.g. switching from PC to phone)
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "visible" && !sourceFile){
+    restoreSession().then(()=>{ updateStartStopBtn(); });
+  }
+});
+
+revealApp(); // Show UI immediately, don't wait for session restore
 restoreSession().then(()=>{
+  updateStartStopBtn(); // Update status text immediately after session restore
+  saveSession(); // Save session immediately so refresh restores properly
   setTimeout(setupAutoSave, 200);
+  setupMobileTrackToolbars();
+  setTimeout(()=>{
+    // Global listener for any input change in panels - triggers Modified
+    const panels = document.getElementById("panels");
+    if(panels){
+      panels.addEventListener("change", ()=>{ _onUserInteract(); saveSession(); });
+      panels.addEventListener("input", _onUserInteract);
+    }
+  }, 300);
   revealApp();
 }).catch(()=>{
   setTimeout(setupAutoSave, 200);
+  setupMobileTrackToolbars();
   revealApp();
 });
 
@@ -4546,7 +5249,9 @@ function closeSource(){
   document.getElementById("source-bar").textContent = "No source selected — tap Open Source to begin";
   document.getElementById("title-select").innerHTML = "<option>No source</option>";
   document.getElementById("save-as-footer").value = "";
-  document.getElementById("status-text").textContent = "No source selected";
+  const _mobSaveAs = document.getElementById("save-as-mobile");
+  if(_mobSaveAs) { if(_mobSaveAs.contentEditable==="true") _mobSaveAs.textContent=""; else _mobSaveAs.value=""; }
+  document.querySelectorAll(".status-text-el").forEach(el=>el.textContent="No source selected");
 
   // Hide preview
   const previewCol = document.getElementById("preview-col");
@@ -4561,6 +5266,16 @@ function closeSource(){
   renderSummary();
   updateStartStopBtn();
   saveSession();
+
+  // Clear summary content explicitly
+  const summaryContent = document.getElementById("summary-content");
+  if(summaryContent) summaryContent.innerHTML = "";
+  document.getElementById("preset-modified").style.display = "none";
+
+  // Clear server session
+  fetch("/api/session", {method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({sourceFile:"", scannedTitleFiles:"[]", audioTracks:"[]", subTracks:"[]"})
+  }).catch(()=>{});
 
   // Clear localStorage snapshot too
   try{ localStorage.setItem("hb_session_snap", JSON.stringify({sourceFile:"",scannedTitleFiles:"[]"})); }catch{}
@@ -4642,7 +5357,8 @@ function updateStatusBar(){
   if(done){ el.textContent="Encode Done!"; return; }
   const err = jobs.find(j=>j.status==="error");
   if(err){ el.textContent="Encode failed: "+(err.error||"unknown"); return; }
-  el.textContent = sourceFile ? "Ready" : "No source selected";
+  const _sts = document.querySelectorAll(".status-text-el");
+  _sts.forEach(el=>el.textContent = sourceFile ? "Ready" : "No source selected");
 }
 
 </script>
@@ -4723,43 +5439,44 @@ function updateStatusBar(){
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
         <div class="section-title" style="margin-top:0">Audio encoder settings for each selected track:</div>
-        <div style="display:flex;gap:8px;font-size:11px;color:var(--text3);margin-bottom:6px">
-          <span style="min-width:100px">Encoder</span>
-          <span style="min-width:80px">Bitrate/Quality</span>
-          <span style="min-width:80px">Mixdown</span>
-          <span style="min-width:80px">Samplerate</span>
-          <span style="min-width:40px">Gain</span>
-          <span>DRC</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select id="aud-default-encoder" style="min-width:100px;font-size:12px">
-            <option value="copy">Auto Passthru</option>
-            <option value="av_aac">AAC</option>
-            <option value="ac3">AC-3</option>
-            <option value="eac3">EAC-3</option>
-            <option value="mp3">MP3</option>
-            <option value="opus">Opus</option>
-            <option value="flac16">FLAC 16-bit</option>
-          </select>
-          <div style="display:flex;gap:4px;align-items:center;font-size:12px">
-            <label><input type="radio" name="aud-bq" value="bitrate" checked> Bitrate</label>
-            <select id="aud-default-bitrate" style="width:60px;font-size:12px">
-              <option>160</option><option>192</option><option>224</option><option>256</option><option selected>320</option><option>384</option><option>448</option><option>512</option>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 8px;margin-bottom:3px">
+              <span style="font-size:11px;color:var(--text3)">Encoder</span>
+              <span style="font-size:11px;color:var(--text3)">Bitrate</span>
+              <span style="font-size:11px;color:var(--text3)">Mixdown</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 8px;align-items:center">
+              <select id="aud-default-encoder" style="font-size:12px;width:100%">
+                <option value="copy">Auto Passthru</option>
+                <option value="av_aac">AAC</option>
+                <option value="ac3">AC-3</option>
+                <option value="eac3">EAC-3</option>
+                <option value="mp3">MP3</option>
+                <option value="opus">Opus</option>
+                <option value="flac16">FLAC 16-bit</option>
+              </select>
+              <select id="aud-default-bitrate" style="font-size:12px;width:100%">
+                <option>160</option><option>192</option><option>224</option><option>256</option><option selected>320</option><option>384</option><option>448</option><option>512</option>
+              </select>
+              <select id="aud-default-mixdown" style="font-size:12px;width:100%">
+                <option value="5point1">5.1 Channels</option>
+                <option value="stereo">Stereo</option>
+                <option value="mono">Mono</option>
+                <option value="dpl2">Dolby Pro Logic II</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div style="margin-bottom:3px">
+              <span style="font-size:11px;color:var(--text3)">Samplerate</span>
+            </div>
+            <select id="aud-default-samplerate" style="font-size:12px;width:100%">
+              <option value="0">Same as source</option>
+              <option value="44100">44.1 kHz</option>
+              <option value="48000">48 kHz</option>
             </select>
           </div>
-          <select id="aud-default-mixdown" style="min-width:80px;font-size:12px">
-            <option value="5point1">5.1 Channels</option>
-            <option value="stereo">Stereo</option>
-            <option value="mono">Mono</option>
-            <option value="dpl2">Dolby Pro Logic II</option>
-          </select>
-          <select id="aud-default-samplerate" style="min-width:80px;font-size:12px">
-            <option value="0">Same as sou...</option>
-            <option value="44100">44.1 kHz</option>
-            <option value="48000">48 kHz</option>
-          </select>
-          <span style="font-size:12px;color:var(--text3)">0dB</span>
-          <span style="font-size:12px;color:var(--text3)">Off</span>
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin-top:10px">
           <input type="checkbox" id="aud-first-encoder-only" checked> Use only first encoder for secondary audio
@@ -4921,5 +5638,125 @@ function updateStatusBar(){
 .multi-status{padding:8px 14px;font-size:12px;color:var(--text2);background:var(--nav);border-top:1px solid var(--border);flex-shrink:0;}
 @media(max-width:600px){.multi-detail-col{display:none;}.multi-inner{width:100%;height:100%;border-radius:0;max-height:none;}}
 </style>
+<style>
+/* Custom mobile select dropdown */
+.custom-select-overlay{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;}
+.custom-select-sheet{background:var(--surface);border-radius:12px 12px 0 0;width:100%;max-height:60vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);}
+.custom-select-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);}
+.custom-select-title{font-size:15px;font-weight:600;color:var(--text);}
+.custom-select-cancel{color:var(--accent);font-size:15px;background:none;border:none;cursor:pointer;padding:4px 8px;}
+.custom-select-option{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border2);cursor:pointer;font-size:15px;color:var(--text);}
+.custom-select-option:active{background:var(--surface2);}
+.custom-select-option.selected{color:var(--accent);}
+.custom-select-option .check{color:var(--accent);font-size:18px;}
+</style>
+<script>
+// Custom mobile select — intercepts native selects on mobile
+(function(){
+  function isMobile(){ return window.innerWidth <= 600; }
+
+  function showCustomSelect(sel){
+    if(!isMobile()) return false;
+    const overlay = document.createElement('div');
+    overlay.className = 'custom-select-overlay';
+    const sheet = document.createElement('div');
+    sheet.className = 'custom-select-sheet';
+    // Header
+    const hdr = document.createElement('div');
+    hdr.className = 'custom-select-header';
+    const title = document.createElement('span');
+    title.className = 'custom-select-title';
+    title.textContent = sel.closest('.field-row')?.querySelector('label,.field-label')?.textContent?.trim() || sel.getAttribute('aria-label') || '';
+    const cancel = document.createElement('button');
+    cancel.className = 'custom-select-cancel';
+    cancel.textContent = 'Cancel';
+    cancel.onclick = () => document.body.removeChild(overlay);
+    hdr.appendChild(title);
+    hdr.appendChild(cancel);
+    sheet.appendChild(hdr);
+    // Options
+    Array.from(sel.options).forEach(opt => {
+      const row = document.createElement('div');
+      row.className = 'custom-select-option' + (opt.selected ? ' selected' : '');
+      row.textContent = opt.text;
+      if(opt.selected){
+        const chk = document.createElement('span');
+        chk.className = 'check';
+        chk.textContent = '✓';
+        row.appendChild(chk);
+      }
+      row.onclick = () => {
+        sel.value = opt.value;
+        sel.dispatchEvent(new Event('change', {bubbles:true}));
+        document.body.removeChild(overlay);
+      };
+      sheet.appendChild(row);
+    });
+    overlay.appendChild(sheet);
+    overlay.onclick = e => { if(e.target===overlay) document.body.removeChild(overlay); };
+    document.body.appendChild(overlay);
+    return true;
+  }
+
+  // Intercept all selects via mousedown
+  document.addEventListener('mousedown', function(e){
+    const sel = e.target.closest('select');
+    if(sel && showCustomSelect(sel)){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+
+  const SCROLL_AREAS = '.sel-inner,.prefs-body,.queue-inner,.sheet-inner,.panel,.summary-info-col';
+
+  // Also intercept touchstart (skip selects inside scrollable areas — handled via click to avoid killing scroll)
+  document.addEventListener('touchstart', function(e){
+    const sel = e.target.closest('select');
+    if(sel && isMobile() && !sel.closest(SCROLL_AREAS)){
+      e.preventDefault();
+      showCustomSelect(sel);
+    }
+  }, {passive:false, capture:true});
+
+  // For selects inside scrollable areas use click so touchmove/scroll detection still works
+  document.addEventListener('click', function(e){
+    const sel = e.target.closest('select');
+    if(sel && isMobile() && sel.closest(SCROLL_AREAS)){
+      e.preventDefault();
+      e.stopPropagation();
+      showCustomSelect(sel);
+    }
+  }, {capture:true});
+})();
+
+// Suppress clicks after scroll in all scrollable panels
+(function(){
+  document.querySelectorAll('.sel-inner,.prefs-body,.queue-inner,.sheet-inner,.panel,.summary-info-col').forEach(container=>{
+    // Clear on next intentional pointer/touch down (covers desktop mouse and mobile touch)
+    container.addEventListener('pointerdown', ()=>{
+      container.classList.remove('sel-scrolling');
+    }, {passive:true});
+    // Detect touch scroll (touchmove only fires on real touch, not desktop mouse)
+    container.addEventListener('touchmove', ()=>{
+      container.classList.add('sel-scrolling');
+    }, {passive:true});
+    // Block form-control activation on touchend during scroll
+    container.addEventListener('touchend', e=>{
+      if(container.classList.contains('sel-scrolling')){
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, {capture:true, passive:false});
+    // Belt-and-suspenders: also block click
+    container.addEventListener('click', e=>{
+      if(container.classList.contains('sel-scrolling')){
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, {capture:true});
+  });
+})();
+
+</script>
 </body>
 </html>

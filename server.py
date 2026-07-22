@@ -20,6 +20,23 @@ jobs      = {}
 jobs_lock = threading.Lock()
 QUEUE_FILE   = "/config/hb-queue.json"
 SESSION_FILE = "/config/hb-session.json"
+
+def _clear_session_source():
+    """Clear source/output state on container restart so app starts fresh."""
+    try:
+        with open(SESSION_FILE) as f:
+            session = json.load(f)
+        session.pop("sourceFile", None)
+        session.pop("scannedTitleFiles", None)
+        session.pop("outputFolder", None)
+        session.pop("toPathLabel", None)
+        session.pop("saveAs", None)
+        with open(SESSION_FILE, "w") as f:
+            json.dump(session, f, indent=2)
+    except Exception:
+        pass
+
+_clear_session_source()
 PREFS_FILE   = "/config/hb-prefs.json"
 
 PREFS_DEFAULTS = {
@@ -124,6 +141,38 @@ def save_config(cfg):
 
 # ── Track / file info ─────────────────────────────────────────────────────────
 
+def _hb_scan_audio(filepath):
+    """Return dict keyed by 1-based track index with bitrate/samplerate from HB scan."""
+    try:
+        r = subprocess.run(
+            ["HandBrakeCLI", "-i", filepath, "--scan", "--no-dvdnav", "--min-duration", "0"],
+            capture_output=True, text=True, timeout=30)
+        out = r.stderr
+    except Exception:
+        return {}
+    import re
+    result = {}
+    track_num = 0
+    in_audio = False
+    for line in out.splitlines():
+        if re.search(r'\+ audio tracks:', line):
+            in_audio = True
+            track_num = 0
+            continue
+        if in_audio:
+            m = re.match(r'\s+\+\s+(\d+),', line)
+            if m:
+                track_num = int(m.group(1))
+                br_m = re.search(r'\((\d+)\s+kbps\)', line)
+                sr_m = re.search(r'\((\d+)\s+Hz\)', line)
+                result[track_num] = {
+                    "bitrate":    int(br_m.group(1)) if br_m else 0,
+                    "samplerate": int(sr_m.group(1)) if sr_m else 0,
+                }
+            elif line.strip() and not line.strip().startswith('+') and track_num:
+                in_audio = False
+    return result
+
 def get_track_info(filepath):
     result = subprocess.run(
         ["ffprobe","-v","quiet","-print_format","json",
@@ -141,7 +190,11 @@ def get_track_info(filepath):
         ct   = s.get("codec_type","")
         tags = s.get("tags",{})
         lang  = tags.get("language","und")
-        title = tags.get("title","")
+        # Try multiple tag fields for subtitle title
+        title = tags.get("title","") or tags.get("handler_name","") or tags.get("name","")
+        # Clean up handler names that are just codec descriptions
+        if title.lower() in ("subtitle","subtitles","text","subrip","srt","ass","ssa",""):
+            title = ""
         disp  = s.get("disposition",{})
         if ct == "video" and not video_info:
             # Parse fps from r_frame_rate fraction e.g. "24000/1001" -> "23.976"
@@ -174,28 +227,66 @@ def get_track_info(filepath):
                 "bit_depth": s.get("bits_per_raw_sample",""),
             }
         elif ct == "audio":
+            # Get bitrate - try stream bit_rate first, fall back to format bit_rate
+            _br = s.get("bit_rate","0") or data.get("format",{}).get("bit_rate","0")
+            try: _br_kbps = int(round(int(_br)/1000))
+            except: _br_kbps = 0
+            # Get sample rate
+            try: _sr = int(s.get("sample_rate","48000"))
+            except: _sr = 48000
+            # Channel layout - prefer descriptive layout over raw count
+            _ch_layout = s.get("channel_layout","")
+            _ch_count = s.get("channels",2)
+            # Format channel layout nicely: 5.1(side) -> 5.1, stereo -> 2.0 etc
+            _ch_display = _ch_layout.split("(")[0] if _ch_layout else str(_ch_count)
+            if _ch_display == "stereo": _ch_display = "2.0"
+            elif _ch_display == "mono": _ch_display = "1.0"
             audio.append({
-                "index":    s.get("index",0),
-                "track":    len(audio)+1,
-                "language": lang,
-                "title":    title or f"Track {len(audio)+1}",
-                "codec":    s.get("codec_name",""),
-                "profile":  s.get("profile",""),
-                "channels": s.get("channels",2),
-                "channel_layout": s.get("channel_layout",""),
-                "sample_rate": s.get("sample_rate","48000"),
-                "default":  disp.get("default",0)==1,
-                "forced":   disp.get("forced",0)==1,
+                "index":          s.get("index",0),
+                "track":          len(audio)+1,
+                "language":       lang,
+                "title":          title,
+                "codec":          s.get("codec_name",""),
+                "profile":        s.get("profile",""),
+                "channels":       _ch_count,
+                "channel_layout": _ch_display,
+                "samplerate":     _sr,
+                "bitrate":        _br_kbps,
+                "default":        disp.get("default",0)==1,
+                "forced":         disp.get("forced",0)==1,
             })
         elif ct == "subtitle":
+            # Build a meaningful title from available metadata
+            _sub_lang_map = {
+                "eng":"English","jpn":"Japanese","fre":"French","ger":"German",
+                "spa":"Spanish","ita":"Italian","por":"Portuguese","rus":"Russian",
+                "chi":"Chinese","kor":"Korean","ara":"Arabic","dut":"Dutch",
+                "swe":"Swedish","nor":"Norwegian","dan":"Danish","fin":"Finnish",
+                "pol":"Polish","hun":"Hungarian","cze":"Czech","rum":"Romanian",
+                "tur":"Turkish","heb":"Hebrew","tha":"Thai","vie":"Vietnamese",
+                "ind":"Indonesian","may":"Malay","ukr":"Ukrainian","hrv":"Croatian",
+                "gre":"Greek","nob":"Norwegian","und":"Unknown",
+                "en":"English","ja":"Japanese","fr":"French","de":"German",
+                "es":"Spanish","it":"Italian","pt":"Portuguese","ru":"Russian",
+                "zh":"Chinese","ko":"Korean","ar":"Arabic","nl":"Dutch",
+            }
+            lang_name = _sub_lang_map.get(lang, lang.upper() if lang != "und" else "")
+            codec_name = s.get("codec_name","").upper().replace("SUBRIP","SRT")
+            if title:
+                sub_title = title
+            elif lang_name:
+                sub_title = lang_name
+            else:
+                sub_title = f"Subtitle {len(subtitles)+1}"
             subtitles.append({
-                "index":    s.get("index",0),
-                "track":    len(subtitles)+1,
-                "language": lang,
-                "title":    title or f"Subtitle {len(subtitles)+1}",
-                "codec":    s.get("codec_name",""),
-                "default":  disp.get("default",0)==1,
-                "forced":   disp.get("forced",0)==1,
+                "index":            s.get("index",0),
+                "track":            len(subtitles)+1,
+                "language":         lang,
+                "title":            sub_title,
+                "codec":            s.get("codec_name",""),
+                "default":          disp.get("default",0)==1,
+                "forced":           disp.get("forced",0)==1,
+                "hearing_impaired": disp.get("hearing_impaired",0)==1,
             })
 
     chapters = []
@@ -220,6 +311,13 @@ def get_track_info(filepath):
             fmt_duration = float(data.get("format",{}).get("duration",0) or 0)
             video_info["duration"] = fmt_duration
         except: pass
+
+    # Overlay accurate bitrate/samplerate from HB scan (ffprobe misreports these for EAC3/DTS)
+    hb_audio = _hb_scan_audio(filepath)
+    for t in audio:
+        hb = hb_audio.get(t["track"], {})
+        if hb.get("bitrate"): t["bitrate"] = hb["bitrate"]
+        if hb.get("samplerate"): t["samplerate"] = hb["samplerate"]
 
     return {"audio": audio, "subtitles": subtitles,
             "chapters": chapters, "video": video_info}
@@ -375,20 +473,34 @@ def build_cmd(params, output_file):
 
     # ── Video ──
     encoder_map = {
-        "h265":       "x265",
-        "h265_10bit": "x265_10bit",
-        "h264":       "x264",
-        "h264_10bit": "x264_10bit",
-        "av1":        "svt_av1",
-        "av1_10bit":  "svt_av1_10bit",
-        "vp9":        "vp9",
-        "h265_nvenc": "nvenc_h265",
-        "h264_nvenc": "nvenc_h264",
-        "h265_qsv":   "qsv_h265",
-        "h264_qsv":   "qsv_h264",
+        "h265":        "x265",
+        "h265_10bit":  "x265_10bit",
+        "h265_12bit":  "x265_12bit",
+        "h264":        "x264",
+        "h264_10bit":  "x264_10bit",
+        "av1":         "svt_av1",
+        "av1_10bit":   "svt_av1_10bit",
+        "vp8":         "vp8",
+        "vp9":         "vp9",
+        "vp9_10bit":   "vp9_10bit",
+        "mpeg4":       "mpeg4",
+        "mpeg2":       "mpeg2",
+        "theora":      "theora",
+        "ffv1":        "ffv1",
+        "h265_nvenc":  "nvenc_h265",
+        "h264_nvenc":  "nvenc_h264",
+        "h265_qsv":    "qsv_h265",
+        "h264_qsv":    "qsv_h264",
     }
     enc = encoder_map.get(params.get("video_encoder","h265_10bit"),"x265_10bit")
     cmd += ["-e", enc]
+
+    # Encoders that support preset/tune/profile/level options
+    enc_supports_preset = enc in {
+        "x264","x264_10bit","x265","x265_10bit","x265_12bit",
+        "svt_av1","svt_av1_10bit",
+        "nvenc_h265","nvenc_h264","qsv_h265","qsv_h264",
+    }
 
     fps = params.get("framerate","same")
     if fps and fps != "same":
@@ -412,20 +524,21 @@ def build_cmd(params, output_file):
             if params.get("turbo_pass"):
                 cmd += ["--turbo"]
 
-    enc_preset = params.get("encoder_preset","slow")
-    cmd += ["--encoder-preset", enc_preset]
+    if enc_supports_preset:
+        enc_preset = params.get("encoder_preset","slow")
+        cmd += ["--encoder-preset", enc_preset]
 
-    tune = params.get("tune","none")
-    if tune and tune != "none":
-        cmd += ["--encoder-tune", tune]
+        tune = params.get("tune","none")
+        if tune and tune != "none":
+            cmd += ["--encoder-tune", tune]
 
-    profile = params.get("profile","auto")
-    if profile and profile != "auto":
-        cmd += ["--encoder-profile", profile]
+        profile = params.get("profile","auto")
+        if profile and profile != "auto":
+            cmd += ["--encoder-profile", profile]
 
-    level = params.get("level","auto")
-    if level and level != "auto":
-        cmd += ["--encoder-level", level]
+        level = params.get("level","auto")
+        if level and level != "auto":
+            cmd += ["--encoder-level", level]
 
     additional = params.get("additional_options","").strip()
     if additional:
@@ -448,6 +561,8 @@ def build_cmd(params, output_file):
     min_dur = int(_prefs.get("min_title_duration", 10))
     if min_dur > 0:
         cmd += ["--min-duration", str(min_dur)]
+    if _prefs.get("max_title_duration_enabled") and int(_prefs.get("max_title_duration", 0)) > 0:
+        cmd += ["--max-duration", str(int(_prefs.get("max_title_duration", 0)))]
 
     # Use JSON output for reliable progress parsing (HB 1.11+)
     cmd += ["--json"]
@@ -920,7 +1035,7 @@ def list_jobs():
     with jobs_lock:
         result = sorted(
             [{k:v for k,v in j.items() if k not in ("log",)} for j in jobs.values()],
-            key=lambda x:x.get("created_at",0),reverse=True)
+            key=lambda x:x.get("created_at",0),reverse=False)
     return jsonify(result)
 
 @app.route("/api/jobs/<jid>")
@@ -1076,6 +1191,25 @@ def preview_cache_size():
         return jsonify({"bytes": total, "mb": round(total / 1024 / 1024, 1)})
     except:
         return jsonify({"bytes": 0, "mb": 0})
+
+
+@app.route("/api/system/sleep", methods=["POST"])
+def system_sleep():
+    try:
+        import subprocess
+        subprocess.Popen(["systemctl", "suspend"])
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/system/shutdown", methods=["POST"])
+def system_shutdown():
+    try:
+        import subprocess
+        subprocess.Popen(["shutdown", "-h", "now"])
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 def _scan_key(filepath):
@@ -1372,8 +1506,11 @@ BUILTIN_PRESETS = {
 # ── Import HandBrake presets ──────────────────────────────────────────────────
 
 def _map_hb_encoder(enc):
-    m={"x265_10bit":"h265_10bit","x265":"h265","x264":"h264","x264_10bit":"h264_10bit",
-       "svt_av1":"av1","svt_av1_10bit":"av1_10bit","vp9":"vp9",
+    m={"x265":"h265","x265_10bit":"h265_10bit","x265_12bit":"h265_12bit",
+       "x264":"h264","x264_10bit":"h264_10bit",
+       "svt_av1":"av1","svt_av1_10bit":"av1_10bit",
+       "vp8":"vp8","vp9":"vp9","vp9_10bit":"vp9_10bit",
+       "mpeg4":"mpeg4","mpeg2":"mpeg2","theora":"theora","ffv1":"ffv1",
        "nvenc_h265":"h265_nvenc","nvenc_h264":"h264_nvenc",
        "qsv_h265":"h265_qsv","qsv_h264":"h264_qsv"}
     return m.get(enc,"h265_10bit")
