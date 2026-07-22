@@ -798,16 +798,12 @@ textarea{resize:vertical;min-height:60px;width:100%;}
     <button class="btn-sm desktop-only" onclick="saveCurrentPreset()">Save Preset</button>
   </div>
   <!-- Row 2: mobile only — Modified under label, Save+Reload under box -->
-  <div class="mobile-only" style="flex-direction:row;align-items:flex-start;gap:4px;">
-    <!-- Spacer + Modified: matches meta-label width exactly -->
-    <div style="min-width:44px;max-width:44px;flex-shrink:0;padding-top:2px;">
+  <div class="mobile-only meta-row">
+    <span class="meta-label" style="padding-top:2px;flex-shrink:0;">
       <span id="preset-modified-mobile" style="display:none;font-size:11px;color:var(--accent);font-style:italic;">Modified</span>
-    </div>
-    <!-- Save + Reload: fills remaining space matching preset box -->
-    <div style="display:flex;gap:3px;flex:1;min-width:0;">
-      <button class="btn-sm" onclick="reloadPreset()" style="flex:1;">Reload</button>
-      <button class="btn-sm" onclick="saveCurrentPreset()" style="flex:1;">Save Preset</button>
-    </div>
+    </span>
+    <button class="btn-sm" onclick="reloadPreset()" style="flex:1;">Reload</button>
+    <button class="btn-sm" onclick="saveCurrentPreset()" style="flex:1;">Save Preset</button>
   </div>
 </div>
 
@@ -3243,7 +3239,7 @@ function applyPreset(name){
     renderLangList("aud-avail-langs", audAvailLangs, "aud", "avail");
     renderLangList("aud-sel-langs",   audSelLangs,   "aud", "sel");
   }
-  setVal("aud-sel-behavior", s.audio_sel_behavior);
+  { const el=document.getElementById("aud-sel-behavior"); if(el) el.value = s.audio_sel_behavior || "all_matching"; }
   setVal("pt-fallback", s.audio_fallback);
   setChk("pt-track-names", s.audio_name_passthru);
   setChk("aud-first-encoder-only", s.audio_secondary_encoder);
@@ -3269,7 +3265,7 @@ function applyPreset(name){
     renderLangList("sub-avail-langs", subAvailLangs, "sub", "avail");
     renderLangList("sub-sel-langs",   subSelLangs,   "sub", "sel");
   }
-  setVal("sub-sel-behavior", s.sub_sel_behavior);
+  { const el=document.getElementById("sub-sel-behavior"); if(el) el.value = s.sub_sel_behavior || "none"; }
   setVal("sub-burnin-behavior", s.sub_burn_behavior);
   setChk("sub-burnin-dvd", s.sub_burn_dvd);
   setChk("sub-burnin-bluray", s.sub_burn_bluray);
