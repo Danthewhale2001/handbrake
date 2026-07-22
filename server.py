@@ -1597,7 +1597,7 @@ def import_presets():
                     "passthru_metadata":  bool(p.get("MetadataPassthru",True)),
                     # Audio selection behavior
                     "audio_language_list":     p.get("AudioLanguageList",[]),
-                    "audio_sel_behavior":      p.get("AudioTrackSelectionBehavior","all"),
+                    "audio_sel_behavior":      {"all":"all_matching","first":"first_matching","none":"none"}.get(p.get("AudioTrackSelectionBehavior","all"),"all_matching"),
                     "audio_copy_mask":         audio_copy_mask,
                     "audio_fallback":          p.get("AudioEncoderFallback","opus"),
                     "audio_name_passthru":     bool(p.get("AudioTrackNamePassthru",True)),
@@ -1609,7 +1609,7 @@ def import_presets():
                     "default_audio_mixdown":   first_audio.get("AudioMixdown","stereo"),
                     # Subtitle selection behavior
                     "sub_language_list":       p.get("SubtitleLanguageList",[]),
-                    "sub_sel_behavior":        p.get("SubtitleTrackSelectionBehavior","all"),
+                    "sub_sel_behavior":        {"all":"all_matching","first":"first_matching","none":"none"}.get(p.get("SubtitleTrackSelectionBehavior","all"),"all_matching"),
                     "sub_burn_behavior":       p.get("SubtitleBurnBehavior","none"),
                     "sub_burn_dvd":            bool(p.get("SubtitleBurnDVDSub",False)),
                     "sub_burn_bluray":         bool(p.get("SubtitleBurnBDSub",False)),
